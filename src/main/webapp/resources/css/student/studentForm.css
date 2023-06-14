@@ -1,0 +1,27 @@
+@charset "UTF-8";
+
+#tableDiv {
+	max-height: 450px;
+	overflow: auto;
+	align-items: center;
+	table-layout: fixed;
+	border-bottom: 2px solid #f2f2f2;
+	border-radius: 0px;
+}
+
+#insertTable {
+	width: 80%;
+}
+
+#notice-card {
+	background-color: rgba(55, 60, 67, 0.1);
+}
+
+.moveTag {
+	text-decoration: none;
+}
+
+.formThead {
+	border-bottom: 2px solid #f2f2f2;
+	border-radius: 0px;
+}

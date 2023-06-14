@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.Calendar.dao.CalendarDAO">
+<resultMap type="CalendarVO" id="calendarList" autoMapping="true">
+	<id column="ID" property="id"/>
+</resultMap>
+
+<insert id="insertCalendar" parameterType="CalendarVO">
+	<selectKey resultType="int" order="BEFORE"
+	keyProperty="id">
+		SELECT CALENDAR_SEQ.NEXTVAL FROM DUAL
+	</selectKey>
+	INSERT INTO CALENDAR
+	   (ID,
+		TITLE,
+		SDATE,
+		EDATE,
+		MEM_NO,
+		BACKGROUND_COLOR,
+		TEXT_COLOR
+	   )VALUES(
+		#{id},
+		#{title},
+		#{sdate,jdbcType=TIMESTAMP},
+		#{edate ,jdbcType=TIMESTAMP},
+		#{memNo},
+		#{backgroundColor},
+		#{textColor}
+		)
+</insert>
+
+	<update id="updateCalendar" parameterType="CalendarVO">
+		UPDATE CALENDAR
+		SET
+		SDATE = #{sdate,jdbcType=TIMESTAMP},
+		EDATE = #{edate,jdbcType=TIMESTAMP}
+		WHERE ID = #{id}
+	</update>
+
+<!-- 	<resultMap type="CalendarVO" id="calendarMap" autoMapping="true">
+		<id property="id" column="ID"/>
+	</resultMap>
+ -->
+	<select id="selectCalendar" parameterType="int" resultType="CalendarVO" >
+		SELECT
+		ID,
+		TITLE,
+		SDATE,
+		EDATE,
+		BACKGROUND_COLOR,
+		TEXT_COLOR
+		FROM CALENDAR
+		WHERE ID= #{id}
+	</select>
+
+	<update id="updateSelectCalendar" parameterType="CalendarVO">
+		UPDATE CALENDAR
+		SET
+		TITLE = #{title},
+		SDATE = #{sdate,jdbcType=TIMESTAMP},
+		EDATE = #{edate,jdbcType=TIMESTAMP},
+		BACKGROUND_COLOR = #{backgroundColor},
+		TEXT_COLOR = #{textColor}
+		WHERE ID = #{id}
+	</update>
+
+	<delete id="deleteCalendar" parameterType="CalendarVO" >
+		DELETE FROM CALENDAR
+		WHERE ID=#{id}
+	</delete>
+	<select id="selectMemCalendar" parameterType="string" resultType="CalendarVO">
+		SELECT
+		ID,
+		TITLE,
+		SDATE,
+		EDATE,
+		BACKGROUND_COLOR,
+		TEXT_COLOR
+		FROM CALENDAR
+		WHERE MEM_NO= #{memNo}
+	</select>
+	<select id="selectacademicCalendar" parameterType="string" resultType="CalendarVO">
+		SELECT
+		ID,
+		TITLE,
+		SDATE,
+		EDATE,
+		BACKGROUND_COLOR,
+		TEXT_COLOR
+		FROM CALENDAR
+		WHERE MEM_NO= #{memNo}
+	</select>
+</mapper>

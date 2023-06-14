@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.favorites.dao.FavoriteDAO">
+<sql id="searchFrag">
+	FROM
+		FAVORITES F INNER JOIN SUBJECT S ON (F.SUB_NO = S.SUB_NO)
+		INNER JOIN DEPARTMENT D ON (S.DEPT_NO = D.DEPT_NO)
+		INNER JOIN COMM C ON (S.SUB_COMM = C.COMM_NO)		
+	    WHERE MEM_NO = #{memNo}
+</sql>
+
+
+<select id="selectFavorites" parameterType="string" resultType="FavoriteVO">
+	SELECT B.*
+	FROM (
+		SELECT ROWNUM RNUM, A.*
+		FROM (
+		SELECT
+		    MEM_NO,
+		    F.SUB_NO,
+		    SUB_NAME,
+		    SUB_GRADE,
+			SUB_HOURS,
+			SUB_SCR,
+			DEPT_NAME,
+		    COMM_NAME "SUBCOMMNAME"
+		<include refid="searchFrag" />
+			) A
+		) B
+</select>
+
+<insert id="insertFavorite" parameterType="FavoriteVO">
+	INSERT INTO FAVORITES (
+	    MEM_NO,
+	    SUB_NO
+	) VALUES (
+	     #{memNo,jdbcType=VARCHAR}
+		, #{subNo,jdbcType=VARCHAR}
+	)
+</insert>
+<delete id="deleteFavorite" parameterType="FavoriteVO">
+	DELETE FROM FAVORITES
+	WHERE
+	    MEM_NO = #{memNo}
+	    AND SUB_NO = #{subNo}
+</delete>
+<delete id="deleteSubjectFavorite" parameterType="FavoriteVO">
+	DELETE FROM FAVORITES
+	WHERE
+	    SUB_NO = #{subNo}
+</delete>
+<select id="selectSuggestions" parameterType="string" resultType="FavoriteVO">
+	SELECT
+	    PRO_NO,
+	    MEM_NAME,
+	    PRO_LOE
+	FROM
+	    PROFESSOR INNER JOIN MEMBER ON(PRO_NO = MEM_NO)
+	WHERE
+	    DEPT_NO = #{deptNo}
+</select>
+
+<select id="imsiLect" resultType="FavoriteVO" parameterType="string">
+		SELECT 
+			LECT_NO
+			,LECT_NAME
+		    ,LECT_MM
+		    ,LECT_PM			
+			,MEM_NAME
+			,SUB_GRADE
+			,SUB_SCR
+			,SUB_STATE
+			,SUB_COMM_NAME
+			,COL_NAME
+			,DEPT_NAME
+			
+			,LT_NO
+			,LTD_NO
+			,LTD_DAY
+			,LTD_PERIOD
+			,LR_NO
+			,LR_NUM
+			,BUIL_NO
+			,BUIL_NAME
+		FROM LECTURE_VIEW 
+		WHERE LECT_STATE='J001' AND PRO_NO=#{proNo}
+		AND AY_YEAR = '2023' AND AY_SEMESTER= '1'
+		
+</select>
+
+</mapper>

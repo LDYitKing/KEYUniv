@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.sch.dao.SchDAO">
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<sql id="searchFrag">
+   <trim prefix="WHERE" prefixOverrides="AND">
+	      <if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+	      	<choose>
+	      		<when test="simpleCondition.searchType eq 'name'">
+	      			AND INSTR(SCH_NAME, #{simpleCondition.searchWord}) > 0
+	      		</when>
+	      		<when test="simpleCondition.searchType eq 'no'">
+	      			AND INSTR(MEM_NO, #{simpleCondition.searchWord}) > 0
+	      		</when>
+	      		<otherwise>
+	      			AND(
+		      			INSTR(SCH_NAME, #{simpleCondition.searchWord}) > 0
+		      			OR
+		      			INSTR(MEM_NO, #{simpleCondition.searchWord}) > 0
+	      			)
+	      		</otherwise>
+	      	</choose>
+	      </if>
+	      <if test="detailCondition neq null">
+	      	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.deptNo)">
+        		AND DEPT_NO = #{detailCondition.deptNo}
+        	</if>
+	      </if>
+	</trim>
+	</sql>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 	전체 장학금 목록 수   -->
+	<select id="selectTotalRecord" parameterType="Pagination" resultType="int">
+		SELECT COUNT(*)
+		FROM SCH
+		<include refid="searchFrag"/>
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 	장학금 조회수	 -->
+	<select id="selectRecTotalRecord" parameterType="Pagination" resultType="int">
+		SELECT COUNT(*)
+		FROM SCH_REC
+		<include refid="searchFrag"/>
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+<!-- 	장학금 목록 리스트 -->
+	<select id="selectSchList" parameterType="pagination" resultType="SchVO">
+			SELECT RNUM, A.*
+			FROM (
+			    SELECT ROWNUM AS RNUM, 
+			    SCH_NO,
+			    SCH_NAME,
+			    SCH_AMOUNT,
+			    SCH_CONT,
+			    SCH_REQ
+			    FROM (
+			        SELECT 
+			        SCH_NO,
+			        SCH_NAME,
+			        SCH_AMOUNT,
+			        SCH_CONT,
+			        SCH_REQ
+			        FROM SCH   
+			        ORDER BY SCH_NO DESC
+			    )
+			) A
+			 <![CDATA[
+			         WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+			      ]]>
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+<!-- 	장학금목록 등록 -->
+	<insert id="insertSch" parameterType="SchVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="schNo">
+			SELECT 'SCH' || LPAD(SCH_SEQ.NEXTVAL, 3, '0') AS SCH_SEQ_STRING FROM DUAL
+		</selectKey>
+			INSERT INTO SCH (
+			    SCH_NO,
+			    SCH_NAME,
+			    SCH_AMOUNT,
+			    SCH_CONT,
+			    SCH_REQ
+			) VALUES (
+			    #{schNo,jdbcType=VARCHAR},
+			    #{schName,jdbcType=VARCHAR},
+			    #{schAmount,jdbcType=NUMERIC},
+			    #{schCont,jdbcType=VARCHAR},
+			    #{schReq,jdbcType=VARCHAR}
+			)
+	</insert>
+	
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+<!-- 	장학금 목록 상세보기 -->
+	<select id="selectSch" resultType="SchVO" parameterType="String">
+		SELECT
+		    SCH_NO,
+	    	SCH_NAME,
+	    	SCH_AMOUNT,
+	    	SCH_CONT,
+	    	SCH_REQ
+		FROM
+	    	SCH
+	    WHERE
+	    	SCH_NO =#{schNo}
+ 	</select>  
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	  
+<!-- 	장학금 목록 수정 -->
+	<update id="updateSch" parameterType="SchVO">
+		UPDATE SCH
+		SET
+			SCH_NAME = #{schName}
+			, SCH_AMOUNT = #{schAmount}
+			, SCH_CONT = #{schCont}
+			, SCH_REQ = #{schReq}
+		WHERE SCH_NO = #{schNo}
+	</update>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!--  	장학금 목록 삭제	 -->
+	<delete id="deleteSch" parameterType="SchVO">
+		DELETE FROM SCH
+		WHERE SCH_NO =#{schNo}
+	</delete>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 관계 묶음 -->
+<resultMap type="SchRecVO" id="schrecMap" autoMapping="true">
+	<id property="schRecNo" column="SCH_REC_NO"/>
+
+<!-- 헤즈 어 관계 -->
+	<association property="addsch" javaType="SchVO" autoMapping="true">
+<!-- 하나의 그룹이다라는 걸 알기위해 atchId 이퀄 설정 확인  -->
+		<id property="schNo" column="SCH_NO"/>
+	</association>
+	
+	<association property="addstu" javaType="StudentVO" autoMapping="true">
+		<id property="stuNo" column="STU_NO"/>
+		<association property="department" javaType="DepartmentVO" autoMapping="true" />
+		<association property="member" javaType="MemberVO" autoMapping="true" />
+	</association>
+
+</resultMap>
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+<!-- 선정 장학생 리스트 조회 -->
+<select id="selectSchRecList"  parameterType="Pagination" resultMap="schrecMap">
+SELECT B.*
+FROM(
+SELECT ROWNUM RNUM, A.*  
+FROM(
+    WITH STUNAME AS(
+        SELECT MEM_NAME,MEM_NO 
+        FROM MEMBER        
+    ),
+     DEPTNAME AS(
+        SELECT DEPT_NO, DEPT_NAME
+        FROM DEPARTMENT       
+    )
+SELECT
+    SCH_NAME, SCH_AMOUNT, SCH_CONT,
+    
+    R.SCH_REC_NO, R.SCH_NO, R.STU_NO, SCH_REC_DATE, SCH_REC_SEMESTER, SCH_REC_STATE,
+    
+    T.DEPT_NO, STU_STATE, STU_YEAR, N.MEM_NAME, D.DEPT_NAME, C.COMM_NO, C.COMM_NAME
+
+    FROM SCH_REC R
+    LEFT JOIN SCH S ON (R.SCH_NO = S.SCH_NO)
+    LEFT JOIN STUDENT T ON(R.STU_NO = T.STU_NO)
+    LEFT OUTER JOIN COMM C ON (C.COMM_NO = R.SCH_REC_STATE)
+    INNER JOIN STUNAME N ON(R.STU_NO = N.MEM_NO)
+    INNER JOIN DEPTNAME D ON(T.DEPT_NO = D.DEPT_NO)
+     <include refid="searchFrag" />
+    )A
+       ORDER BY RNUM DESC
+)B
+
+	<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+	
+	
+<!-- 선정 장학생 리스트 조회 -->
+<select id="selectSchRecMemList"  parameterType="Pagination" resultMap="schrecMap">
+SELECT B.*
+FROM(
+SELECT ROWNUM RNUM, A.*  
+FROM(
+    WITH STUNAME AS(
+        SELECT MEM_NAME,MEM_NO 
+        FROM MEMBER        
+    ),
+     DEPTNAME AS(
+        SELECT DEPT_NO, DEPT_NAME
+        FROM DEPARTMENT       
+    )
+SELECT
+    SCH_NAME, SCH_AMOUNT, SCH_CONT,
+    
+    R.SCH_REC_NO, R.SCH_NO, R.STU_NO, SCH_REC_DATE, SCH_REC_SEMESTER, SCH_REC_STATE,
+    
+    T.DEPT_NO, STU_STATE, STU_YEAR, N.MEM_NAME, D.DEPT_NAME, C.COMM_NO, C.COMM_NAME
+
+    FROM SCH_REC R
+    LEFT JOIN SCH S ON (R.SCH_NO = S.SCH_NO)
+    LEFT JOIN STUDENT T ON(R.STU_NO = T.STU_NO)
+    LEFT OUTER JOIN COMM C ON (C.COMM_NO = R.SCH_REC_STATE)
+    INNER JOIN STUNAME N ON(R.STU_NO = N.MEM_NO)
+    INNER JOIN DEPTNAME D ON(T.DEPT_NO = D.DEPT_NO)
+     <include refid="searchFrag" />
+     WHERE N.MEM_NO = #{pageUser}
+    )A
+       ORDER BY RNUM DESC
+)B
+
+	<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+
+
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 장학생 등록 SQL문 -->
+<insert id="insertSchRec" parameterType="SchRecVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="schRecNo">
+			SELECT 'SCHR' || LPAD(SCH_SEQ.NEXTVAL, 3, '0') AS SCH_REC_NO FROM DUAL
+		</selectKey>
+			INSERT INTO SCH_REC (
+			    SCH_REC_NO,
+			    SCH_NO,
+			    STU_NO,
+			    SCH_REC_DATE,
+			    SCH_REC_SEMESTER,
+			    SCH_REC_STATE
+			) VALUES (
+			     #{schRecNo,jdbcType=VARCHAR}
+			    , #{schNo,jdbcType=VARCHAR}
+				, #{stuNo,jdbcType=VARCHAR}
+				, #{schRecDate,jdbcType=DATE}
+				, #{schRecSemester,jdbcType=NUMERIC}
+				, #{schRecState,jdbcType=VARCHAR}
+			)
+	</insert>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+<!-- 	장학금목록 참조 SQL -->
+	<select id="selectSchPackList" resultType="SchVO">
+		SELECT
+		    SCH_NO,
+	    	SCH_NAME,
+	    	SCH_AMOUNT,
+	    	SCH_CONT,
+	    	SCH_REQ
+		FROM
+	    	SCH
+	</select>
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 	장학생 선정 상세보기 (1) -->
+	<select id="selectSchRec" resultMap="schrecMap" parameterType="String">
+		SELECT
+		    S.SCH_NO,
+	    	S.SCH_NAME,
+	    	S.SCH_AMOUNT,
+	    	S.SCH_CONT,
+	    	R.SCH_REC_NO,
+	    	R.SCH_REC_DATE,
+	    	R.SCH_REC_SEMESTER,
+	    	R.SCH_REC_STATE,
+	    	D.DEPT_NO,
+	    	D.DEPT_NAME,
+	    	T.COL_NO,
+            C.COL_NAME,
+	    	M.MEM_NAME,
+	    	M.MEM_NO,
+	    	O.COMM_NO,
+	    	O.COMM_NAME
+		FROM
+	    	SCH_REC R
+	    	 LEFT JOIN SCH S ON (R.SCH_NO = S.SCH_NO)
+    		 LEFT JOIN STUDENT T ON(R.STU_NO = T.STU_NO)
+    		 LEFT JOIN MEMBER M ON(M.MEM_NO = T.STU_NO)
+    		 LEFT JOIN DEPARTMENT D ON(D.DEPT_NO = T.DEPT_NO)
+             LEFT JOIN COLLEAGE C ON(C.COL_NO = T.COL_NO)
+             LEFT OUTER JOIN COMM O ON (O.COMM_NO = R.SCH_REC_STATE)
+	    WHERE
+	    	SCH_REC_NO=#{schRecNo}
+ 	</select>  
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	
+	<update id="updateSchRec" parameterType="SchRecVO">
+		UPDATE SCH_REC
+		SET
+			SCH_NO = #{schNo}
+			, STU_NO = #{stuNo}
+			, SCH_REC_DATE = #{schRecDate}
+			, SCH_REC_SEMESTER = #{schRecSemester}
+			, SCH_REC_STATE = #{schRecState}
+		WHERE SCH_REC_NO = #{schRecNo}
+	</update>
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+	<delete id="deleteSchRec" parameterType="SchRecVO">
+		DELETE FROM SCH_REC
+		WHERE SCH_REC_NO =#{schRecNo}
+	</delete>
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+	
+</mapper>	
+	  

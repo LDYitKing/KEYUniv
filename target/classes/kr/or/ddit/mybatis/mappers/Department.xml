@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.department.dao.DepartmentDAO">
+	<select id="selectDepartmentList" resultType="DepartmentVO">
+		SELECT
+			DEPT_NO
+			,COL_NO
+			,DR_NO
+			,DEPT_NAME 
+			,DEPT_TUITION
+		FROM DEPARTMENT
+		WHERE DEPT_NO != '0101'
+	</select>
+	<select id="selectColleageList" resultType="ColleageVO">
+		SELECT 	
+			COL_NO
+			, COL_NAME
+		FROM COLLEAGE
+		WHERE COL_NO != '01'
+	</select>
+	
+
+
+	
+</mapper>

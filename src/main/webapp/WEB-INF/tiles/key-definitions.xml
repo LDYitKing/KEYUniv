@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd" >
+<tiles-definitions>
+<!-- 추상 데피니션 : 그대론 못 만들고 자식이 파생되어야함.(중복코드를 상위로 올린 것임.) -->
+<!-- 바디안에 컨텐츠만 신경쓰면됨 -->
+  <definition name="parent" template="/WEB-INF/views/template_theme.jsp">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="mainnav" value="/includee/mainnav_all.jsp" />
+  	<put-attribute name="title" value="KEY UNIV"/>
+  	<put-attribute name="sideBar" value="/includee/sideBar.jsp" />
+  	<put-attribute name="header" value="/includee/header.jsp" />
+  	<put-attribute name="footer" value="/includee/footer.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp"/>
+  </definition>
+  <!-- 컨트롤러의 로지컬뷰네임과 네임은 연결되어야 한다. -->
+  <definition name="index" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/index.jsp" />
+  </definition>
+
+  <definition name="sample/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/sample/{1}.jsp" />
+  </definition>
+
+  <definition name="professor/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/professor/{1}.jsp" />
+  </definition>
+
+  <definition name="facility/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/facility/{1}.jsp" />
+  </definition>
+
+  <definition name="univBoard/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/univBoard/{1}.jsp" />
+  </definition>
+
+  <definition name="asgn/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/asgn/{1}.jsp" />
+  </definition>
+
+  <definition name="lecture/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/lecture/{1}.jsp"/>
+  </definition>
+
+  <definition name="subject/*" extends="parent">
+	<put-attribute name="body" value="/WEB-INF/views/subject/{1}.jsp"/>
+  </definition>
+
+  <definition name="sch/*" extends="parent">
+    <put-attribute name="body" value="/WEB-INF/views/sch/{1}.jsp" />
+  </definition>
+
+  <definition name="calendar/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/calendar/{1}.jsp"></put-attribute>
+  </definition>
+
+  <definition name="attendance/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/attendance/{1}.jsp"></put-attribute>
+  </definition>
+
+  <definition name="curri/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/curri/{1}.jsp"/>
+  </definition>
+  	
+  <definition name="exam/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/exam/{1}.jsp"/>
+  </definition>
+  
+  <definition name="tuti/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/tuti/{1}.jsp"/>
+  </definition>
+  	
+  <definition name="classroom/classRoomView" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/classroom/classRoomView.jsp" />
+  </definition>
+  	
+  <definition name="score/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/score/{1}.jsp"/>
+  </definition>
+  
+  <definition name="error/*" template="/WEB-INF/views/error/{1}.jsp">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp"/>
+  </definition>
+  
+  
+</tiles-definitions>

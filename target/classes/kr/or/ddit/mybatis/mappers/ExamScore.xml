@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.exam.dao.ExamDAO">
+	<insert id="insertExamScore" parameterType="ExamScoreVO">
+		MERGE INTO EXAM_SCORE
+		USING DUAL
+		ON (EXAM_NO = #{examNo,jdbcType=VARCHAR} AND STU_NO = #{stuNo,jdbcType=VARCHAR})
+		WHEN MATCHED THEN
+		    UPDATE SET ES_FSCORE = #{esFscore,jdbcType=VARCHAR}
+		WHEN NOT MATCHED THEN
+		    INSERT (EXAM_NO, STU_NO, ES_FSCORE)
+		    VALUES (#{examNo,jdbcType=VARCHAR}, #{stuNo,jdbcType=VARCHAR}, #{esFscore,jdbcType=VARCHAR})
+	</insert>
+
+</mapper>

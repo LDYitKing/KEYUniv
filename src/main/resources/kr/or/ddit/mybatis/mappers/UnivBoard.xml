@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.univBoard.dao.UnivBoardDAO">
+	<sql id="searchFrag">
+		<where>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'writer'">
+						INSTR(UB_WRITER, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType eq 'content'">
+						INSTR(UB_CONTENT, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(UB_WRITER, #{simpleCondition.searchWord}) > 0
+						OR
+						INSTR(UB_CONTENT, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+	<select id="selectTotalRecord" parameterType="Pagination" resultType="int">
+		SELECT COUNT(*)
+		FROM UNIV_BOARD
+		<include refid="searchFrag" />
+	</select>
+
+
+	<select id="selectUnivBoard" parameterType="int" resultMap="univboardMap">
+		SELECT
+		    UB_NO,
+		    UB_TITLE,
+		    UB_WRITER,
+		    UB_TAG,
+		    UB_CONTENT,
+		    UB_CNT,
+		    UB_WDATE,
+		    UB_FILE
+		    ATCH_ID,
+		    ATCH_SEQ,
+		    ATCH_MIME,
+		    ATCH_ORGIN_NAME,
+		    ATCH_SAVE_NAME,
+		    ATCH_SIZE,
+		    ATCH_DATE
+		FROM
+		    UNIV_BOARD
+		    LEFT OUTER JOIN ATCH_FILE ON (UB_FILE = ATCH_ID)
+		    WHERE UB_NO = #{ubNo}
+	</select>
+	
+<resultMap type="UnivBoardVO" id="univboardMap" autoMapping="true">
+	<id property="ubNo" column="UB_NO"/>
+	<!-- 헤즈 어 관계 -->
+	<association property="atchFileGroup" javaType="AttatchFileGroupVO">
+	<!-- 하나의 그룹이다라는 걸 알기위해 atchId 이퀄 설정 확인  -->
+		<id property="atchId" column="ATCH_ID"/>
+		<!-- 헤즈 매니 관계 -->
+		<collection property="atchfileList" ofType="AttatchFileVO" autoMapping="true"/>
+	</association>
+</resultMap>
+
+	<select id="selectUnivBoardList" parameterType="Pagination" resultType="UnivBoardVO">
+		SELECT B.*
+		FROM (
+			SELECT ROWNUM RNUM, A.*
+			FROM (
+				SELECT UB_NO, UB_TITLE, UB_WRITER
+					, UB_TAG, UB_CNT, UB_WDATE
+					, (
+						SELECT COUNT(*)
+						FROM ATCH_FILE
+						WHERE UB_FILE = ATCH_ID
+					) ATCH_COUNT
+				FROM UNIV_BOARD
+				<include refid="searchFrag" />	
+				ORDER BY UB_NO DESC
+			) A
+		)B
+	<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+	
+	<insert id="insertUnivBoard" parameterType="UnivBoardVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="ubNo">
+			SELECT UNIV_BOARD_SEQ.NEXTVAL
+			FROM DUAL
+		</selectKey>
+			INSERT INTO UNIV_BOARD (
+			    UB_NO,
+			    UB_TITLE,
+			    UB_WRITER,
+			    UB_TAG,
+			    UB_CONTENT,
+			    UB_CNT,
+			    UB_WDATE,
+			    UB_FILE
+			) VALUES (
+			    #{ubNo,jdbcType=NUMERIC},
+			    #{ubTitle,jdbcType=VARCHAR},
+			    #{ubWriter,jdbcType=VARCHAR},
+			    #{ubTag,jdbcType=VARCHAR},
+			    #{ubContent,jdbcType=CLOB},
+			    0,
+			    SYSTIMESTAMP,
+			    #{ubFile,jdbcType=NUMERIC}
+			)
+	</insert>
+	
+	
+	<update id="updateUbCnt" parameterType="int">
+		UPDATE UNIV_BOARD
+		SET
+		UB_CNT = UB_CNT +1
+		WHERE UB_NO = #{ubNo}
+	</update>
+	
+	<update id="updateUnivBoard" parameterType="UnivBoardVO">
+		UPDATE UNIV_BOARD
+		SET
+			UB_TITLE = #{ubTitle,jdbcType=VARCHAR}
+			, UB_TAG = #{ubTag,jdbcType=VARCHAR}
+			, UB_WDATE = SYSTIMESTAMP
+			, UB_CONTENT = #{ubContent,jdbcType=CLOB}
+			, UB_FILE = #{ubFile,jdbcType=NUMERIC}
+		WHERE UB_NO = #{ubNo}
+	</update>
+
+	<delete id="deleteUnivBoard" parameterType="UnivBoardVO">
+		DELETE FROM UNIV_BOARD
+		WHERE UB_NO = #{ubNo}
+	</delete>
+	
+	<select id="selectMainNoticeBoardList" resultType="UnivBoardVO">
+		SELECT
+			UB_NO,
+			UB_TITLE,
+			UB_WRITER,
+			UB_WDATE,
+			
+			MEM_NAME
+			
+		FROM UNIV_BOARD INNER JOIN MEMBER ON(MEM_NO = UB_WRITER)
+	</select>
+
+</mapper>

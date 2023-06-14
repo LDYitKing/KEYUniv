@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:c="http://www.springframework.org/schema/c"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-5.7.xsd">
+				
+	<bean id="passwordEncoder" class="org.springframework.security.crypto.factory.PasswordEncoderFactories" 
+		factory-method="createDelegatingPasswordEncoder"
+	/>
+	
+	<bean id="authenticationProvider" class="org.springframework.security.authentication.dao.DaoAuthenticationProvider" 
+		p:userDetailsService-ref="memberDAO"
+		p:passwordEncoder-ref="passwordEncoder"
+	/>
+	<security:authentication-manager>
+		<security:authentication-provider ref="authenticationProvider"/>
+	</security:authentication-manager>
+
+	<bean id="authenticationFailureHandler" class="kr.or.ddit.security.handler.CustomAuthenticationFailureHandler" 
+		p:targetURL="/"
+	/>
+
+	<security:http pattern="/resources/**" security="none" />
+	<!-- 아이디 찾기, 비밀번호 찾기 할 때는 시큐리티가 적용되면 안된다 -->
+	<security:http pattern="/member/searchId.do" security="none" />
+	<security:http pattern="/member/searchPasswd.do" security="none" />
+	<security:http pattern="/member/sendMail.do" security="none" />
+	
+	<security:http>
+		<security:form-login 
+			default-target-url="/" always-use-default-target="true"
+			login-page="/login"
+			username-parameter="memNo"
+			password-parameter="memPass"
+			authentication-failure-handler-ref="authenticationFailureHandler"
+		/> 
+		<security:logout logout-url="/logout"/>
+<!-- 	AuthorizationManager -->
+		<security:intercept-url pattern="/login" access="permitAll"/>
+		<security:intercept-url pattern="/index.do" access="isAuthenticated()"/>
+		<security:intercept-url pattern="/**" access="isAuthenticated()"/>
+	</security:http>
+	
+
+</beans>

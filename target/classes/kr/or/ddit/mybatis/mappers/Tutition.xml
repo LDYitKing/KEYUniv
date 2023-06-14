@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.tutition.dao.TuitionDAO">
+	<sql id="searchFrag">
+	<trim prefix="WHERE" prefixOverrides="AND">
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'writer'">
+						INSTR(UB_WRITER, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType eq 'content'">
+						INSTR(UB_CONTENT, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(UB_WRITER, #{simpleCondition.searchWord}) > 0
+						OR
+						INSTR(UB_CONTENT, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+		</if>
+		  <if test="detailCondition neq null">
+	      	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.deptNo)">
+        		AND DEPT_NO = #{detailCondition.deptNo}
+        	</if>
+	      </if>
+	</trim>
+</sql>
+
+<resultMap type="TutiPayVO" id="tutipayMap" autoMapping="true">
+	<id property="tpNo" column="TP_NO"/>
+	<!-- 헤즈 어 관계 -->
+	<association property="atchFileGroup" javaType="AttatchFileGroupVO">
+	<!-- 하나의 그룹이다라는 걸 알기위해 atchId 이퀄 설정 확인  -->
+		<id property="atchId" column="ATCH_ID"/>
+		<!-- 헤즈 매니 관계 -->
+		<collection property="atchfileList" ofType="AttatchFileVO" autoMapping="true"/>
+	</association>
+</resultMap>
+		
+<!-- 총 페이지 수(확인)~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	 -->
+	<select id="selectTotalRecord" parameterType="Pagination" resultType="int">
+		SELECT COUNT(*)
+		FROM TUITION
+		<include refid="searchFrag" />
+	</select>
+	
+<!-- 납입확인(교직원)~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<select id="selectTutiPayList" parameterType="Pagination" resultType="TutiPayVO">
+		SELECT B.*
+			FROM (
+		SELECT ROWNUM RNUM, A.*
+			FROM (
+				WITH MEM AS(
+			    SELECT MEM_NO ,MEM_NAME, DEPT_NAME, COL_NAME
+			    FROM MEMBER_COURSE
+			)
+          SELECT  DISTINCT 
+                   TP_NO,
+                   T.STU_NO,
+                   TUITION_NO,
+                   TP_STATE,
+                   M.COL_NAME,
+                   M.DEPT_NAME,
+                   M.MEM_NAME,
+                   R.SCH_REC_SEMESTER,
+                   O.COMM_NO,
+                   O.COMM_NAME
+				       
+				   FROM TUITION_PAYMENT T
+                   LEFT OUTER JOIN MEM M ON (T.STU_NO = M.MEM_NO)
+				   INNER JOIN COMM O ON(O.COMM_NO = T.TP_STATE)
+				   INNER JOIN SCH_REC R ON(R.STU_NO = T.STU_NO)
+				<include refid="searchFrag" />	
+				ORDER BY TP_NO DESC
+			) A
+		)B
+	<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+	
+<!-- 납입확인(학생)~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+	<select id="selectTutiPayMemList"  parameterType="Pagination" resultType="TutiPayVO">
+	SELECT B.*
+		FROM (
+			SELECT ROWNUM RNUM, A.*
+			FROM (
+			WITH MEM AS(
+			    SELECT MEM_NO ,MEM_NAME, DEPT_NAME, COL_NAME
+			FROM MEMBER_COURSE
+			)
+          SELECT  DISTINCT 
+                  TP_NO,
+                   T.STU_NO,
+                   TUITION_NO,
+                   TP_STATE,
+                   M.COL_NAME,
+                   M.DEPT_NAME,
+                   M.MEM_NAME,
+                   R.SCH_REC_SEMESTER,
+                   O.COMM_NO,
+                   O.COMM_NAME
+				       
+				   FROM TUITION_PAYMENT T
+                   LEFT OUTER JOIN MEM M ON (T.STU_NO = M.MEM_NO)
+				   INNER JOIN COMM O ON(O.COMM_NO = T.TP_STATE)
+				   INNER JOIN SCH_REC R ON(R.STU_NO = T.STU_NO)
+				<include refid="searchFrag" />	
+				WHERE M.MEM_NO = #{pageUser}
+			) A
+				ORDER BY TP_NO DESC
+		)B
+		
+			<![CDATA[
+					WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+				]]>
+			</select>
+	
+	
+<!-- 납입확인 (상세보기)~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+		<select id="selectTutiPay" resultType="TutiPayVO" parameterType="TutiPayVO">
+			WITH MEM AS(
+			    SELECT MEM_NAME, DEPT_NAME, MEM_TEL, COL_NAME, MEM_NO, MEM_EMAIL,STU_YEAR
+			    FROM MEMBER_COURSE
+			)
+			SELECT DISTINCT
+			    M.MEM_NAME,
+                M.DEPT_NAME,
+                M.MEM_TEL,
+                M.MEM_EMAIL,
+                M.STU_YEAR, 
+			    T.TP_NO,
+			    T.STU_NO,
+			    T.TUITION_NO,
+			    TP_DATE,
+			    TP_AMOUNT,
+			    TP_STATE,
+			    SCH_AMOUNT,
+			    SCH_NAME,
+			    SCH_REC_NO,
+			    SCH_REC_DATE,
+                SCH_REC_SEMESTER,
+                SCH_REC_STATE,
+			    COL_NAME,
+			    COMM_NO,
+			    COMM_NAME,
+			    TUITION_PAYMENT,
+			    TUITION_AMOUNT,
+			    TUITION_SCH_REC
+			FROM
+			    TUITION_PAYMENT T
+			    LEFT OUTER JOIN MEM M ON (T.STU_NO = M.MEM_NO)
+			    LEFT OUTER JOIN COMM C ON (T.TP_STATE = C.COMM_NO)
+			    LEFT JOIN SCH_REC R ON(R.STU_NO = T.STU_NO)
+			    LEFT JOIN SCH S ON(S.SCH_NO = R.SCH_NO)
+			    LEFT JOIN TUITION U ON(U.TUITION_NO = T.TUITION_NO)
+			WHERE    
+				T.TUITION_NO =#{tuitionNo}
+		</select>
+		
+		
+<!-- 등록금 리스트(직원)~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	~~~~~~~~~  -->			
+	<select id="selectTutiList" parameterType="Pagination" resultType="TuitionVO">
+		SELECT B.*
+			FROM (
+				SELECT ROWNUM RNUM, A.*
+				FROM(
+				WITH MEM AS(
+			        SELECT 
+			        	MEM_NO ,MEM_NAME, DEPT_NAME, COL_NAME, STU_NO
+			        FROM 
+			        	MEMBER_COURSE
+				    )
+				SELECT DISTINCT
+				    T.TUITION_NO,
+				    TUITION_COL,
+				    TUITION_DEPT,
+				    TUITION_STU_NO,
+				    TUITION_NAME,
+				    TUITION_GRADE,
+				    TUITION_SEMESTER,
+				    TUITION_SCH_REC,
+				    TUITION_AMOUNT,
+				    TUITION_PAYMENT,
+				    M.COL_NAME,
+                   	P.TP_STATE,
+                   	C.COMM_NAME,
+                   	M.DEPT_NAME
+				FROM
+				    TUITION T
+			    LEFT OUTER JOIN MEM M ON (M.STU_NO = T.TUITION_STU_NO)
+                LEFT OUTER JOIN TUITION_PAYMENT P ON (P.TUITION_NO = T.TUITION_NO)
+                LEFT JOIN COMM C ON(P.TP_STATE = C.COMM_NO)
+				<include refid="searchFrag" />	
+				ORDER BY TUITION_NO DESC
+			) A
+		)B
+	<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+	
+<!-- 등록금 리스트(학생)~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	         -->	
+	<select id="selectTutiMemList"  parameterType="Pagination" resultType="TuitionVO">
+	SELECT B.*
+		FROM (
+			SELECT ROWNUM RNUM, A.*
+			FROM(
+			 WITH MEM AS(
+			        SELECT 
+			        	MEM_NO ,MEM_NAME, DEPT_NAME, COL_NAME,STU_NO
+			        FROM 
+			        	MEMBER_COURSE
+				    )
+				SELECT DISTINCT
+				    T.TUITION_NO,
+				    TUITION_COL,
+				    TUITION_DEPT,
+				    TUITION_STU_NO,
+				    TUITION_NAME,
+				    TUITION_GRADE,
+				    TUITION_SEMESTER,
+				    TUITION_SCH_REC,
+				    TUITION_AMOUNT,
+				    TUITION_PAYMENT,
+				    M.COL_NAME,
+                   	P.TP_STATE,
+                   	C.COMM_NAME,
+                   	M.DEPT_NAME
+				FROM
+				    TUITION T
+			    LEFT OUTER JOIN MEM M ON (M.STU_NO = T.TUITION_STU_NO)
+                LEFT OUTER JOIN TUITION_PAYMENT P ON (P.TUITION_NO = T.TUITION_NO)
+                LEFT JOIN COMM C ON(P.TP_STATE = C.COMM_NO)
+				<include refid="searchFrag" />	
+				WHERE M.MEM_NO = #{pageUser}
+			) A
+				ORDER BY TUITION_NO DESC
+		)B
+		
+			<![CDATA[
+					WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+				]]>
+	</select>
+			
+<!-- 등록금 고지서 상세보기 확인 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~			 -->
+	<select id="selectTuti" resultType="TuitionVO" parameterType="String">
+        WITH MEM AS(
+			    SELECT MEM_NO, MEM_NAME, DEPT_NAME, COL_NAME
+			    FROM MEMBER_COURSE
+			)
+			SELECT DISTINCT
+				T.TUITION_NO,
+			    TUITION_COL,
+			    TUITION_DEPT,
+			    TUITION_STU_NO,
+			    TUITION_NAME,
+			    TUITION_GRADE,
+			    T.TUITION_SEMESTER,
+			    TUITION_SCH_REC,
+			    TUITION_AMOUNT,
+			    TUITION_PAYMENT,
+			    M.COL_NAME,
+              	P.TP_STATE,
+              	C.COMM_NAME,
+			    P.TP_DATE,
+			    S.SCH_AMOUNT,
+			    S.SCH_NAME,
+			    R.SCH_REC_SEMESTER,
+                M.DEPT_NAME
+			FROM
+			    TUITION T
+			    LEFT OUTER JOIN MEM M ON (T.TUITION_STU_NO = M.MEM_NO)
+			    LEFT OUTER JOIN TUITION_PAYMENT P ON (P.TUITION_NO = T.TUITION_NO)
+			    LEFT OUTER JOIN COMM C ON (P.TP_STATE = C.COMM_NO)
+			    LEFT JOIN SCH_REC R ON(R.STU_NO = T.TUITION_STU_NO)
+			    LEFT JOIN SCH S ON(S.SCH_NO = R.SCH_NO)
+			WHERE    
+				T.TUITION_NO = #{TUITION_NO}
+		
+		</select>
+<!-- 등록금 고지서 삭제 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+		<delete id="deleteTuti" parameterType="TuitionVO">
+			DELETE FROM TUITION
+			WHERE TUITION_NO = #{tuitionNo}
+		</delete>
+		
+		
+<!-- 등록금 고시서 등록 -->	
+<insert id="insertTuti" parameterType="TuitionVO">
+	<selectKey order="BEFORE" resultType="string" keyProperty="tuitionNo">
+		SELECT 'TUTI' || LPAD(TUITUION_SEQ.NEXTVAL, 3, '0') AS SCH_REC_NO FROM DUAL
+	</selectKey>
+		INSERT INTO TUITION(
+			TUITION_NO,
+		    TUITION_COL,
+		    TUITION_DEPT,
+		    TUITION_STU_NO,
+		    TUITION_NAME,
+		    TUITION_GRADE,
+		    TUITION_SEMESTER,
+		    TUITION_SCH_REC,
+		    TUITION_AMOUNT,
+		    TUITION_PAYMENT
+		) VALUES (
+			#{tuitionNo,jdbcType=VARCHAR},
+			#{tuitionCol,jdbcType=VARCHAR},
+			#{tuitionDept,jdbcType=VARCHAR},
+			#{tuitionStuNo,jdbcType=VARCHAR},
+			#{tuitionName,jdbcType=VARCHAR},
+			#{tuitionGrade,jdbcType=NUMERIC},
+			#{tuitionSemester,jdbcType=NUMERIC},
+			#{tuitionSchRec,jdbcType=NUMERIC},
+			#{tuitionAmount,jdbcType=NUMERIC},
+			#{tuitionPayment,jdbcType=NUMERIC}
+		)
+</insert>
+	
+	
+	
+</mapper>

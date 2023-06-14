@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.grid.dao.GridDAO">
+<select id="selectUserGridList" resultType="GridVO" parameterType="string">
+	SELECT
+	    GRID_CODE,
+	    MEM_NO,
+	    GRID_X,
+	    GRID_Y,
+	    GRID_W,
+	    GRID_H,
+    	GRID_STATUS
+	FROM
+	    GRID
+	WHERE
+	    MEM_NO = #{memNo}
+</select>
+
+<insert id="insertGrid" parameterType="GridVO">
+	INSERT INTO GRID (
+		GRID_CODE
+		, MEM_NO
+		, GRID_X
+		, GRID_Y
+		, GRID_W
+		, GRID_H
+		, GRID_STATUS
+	) 
+	VALUES (
+		 #{gridCode,jdbcType=VARCHAR}
+		, #{memNo,jdbcType=VARCHAR}
+		, #{gridX,jdbcType=NUMERIC}
+		, #{gridY,jdbcType=NUMERIC}
+		, #{gridW,jdbcType=NUMERIC}
+		, #{gridH,jdbcType=NUMERIC}
+		, #{gridStatus,jdbcType=VARCHAR}
+	)
+</insert>
+
+<update id="updateGrid" parameterType="GridVO">
+UPDATE GRID
+SET
+	 GRID_X = #{gridX,jdbcType=NUMERIC}
+	, GRID_Y = #{gridY,jdbcType=NUMERIC}
+	, GRID_W = #{gridW,jdbcType=NUMERIC}
+	, GRID_H = #{gridH,jdbcType=NUMERIC}
+	, GRID_STATUS = #{gridStatus,jdbcType=VARCHAR}
+WHERE
+	MEM_NO = #{memNo,jdbcType=VARCHAR} AND GRID_CODE = #{gridCode}
+</update>
+<delete id="deleteGrid" parameterType="GridVO">
+DELETE FROM GRID
+WHERE
+	MEM_NO = #{memNo} AND GRID_CODE = #{gridCode}
+</delete>
+</mapper>

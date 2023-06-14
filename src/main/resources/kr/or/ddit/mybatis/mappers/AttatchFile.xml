@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.attatch.dao.AttatchFileGroupDAO">
+	<insert id="insertAttatchFileGroup" parameterType="AttatchFileGroupVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="atchId">
+			SELECT ATTATCH_SEQ.NEXTVAL
+			FROM DUAL
+		</selectKey>
+		INSERT ALL
+		<foreach collection="atchfileList" item="attatch" index="idx">
+			INTO ATCH_FILE(
+				 ATCH_ID
+				, ATCH_SEQ
+				, ATCH_MIME
+				, ATCH_ORGIN_NAME
+				, ATCH_SAVE_NAME
+				, ATCH_SIZE
+				, ATCH_DATE
+			)VALUES(
+				#{atchId,jdbcType=NUMERIC}
+				, #{idx}+1
+				, #{attatch.atchMime,jdbcType=VARCHAR}
+				, #{attatch.atchOrginName,jdbcType=VARCHAR}
+				, #{attatch.atchSaveName,jdbcType=VARCHAR}
+				, #{attatch.atchSize,jdbcType=NUMERIC}
+				, SYSTIMESTAMP
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	<insert id="updateAttatchFileGroup" parameterType="AttatchFileGroupVO">
+		<selectKey order="BEFORE" resultType="int" keyProperty="startSeq">
+			SELECT NVL(MAX(ATCH_SEQ), 0) + 1
+			FROM ATCH_FILE
+			WHERE ATCH_ID = #{atchId}
+		</selectKey>
+		INSERT ALL
+		<foreach collection="atchfileList" item="attatch" index="idx">
+			INTO ATCH_FILE(
+				 ATCH_ID
+				, ATCH_SEQ
+				, ATCH_MIME
+				, ATCH_ORGIN_NAME
+				, ATCH_SAVE_NAME
+				, ATCH_SIZE
+				, ATCH_DATE
+			)VALUES(
+				#{atchId,jdbcType=NUMERIC}
+				, #{idx}+#{startSeq}
+				, #{attatch.atchMime,jdbcType=VARCHAR}
+				, #{attatch.atchOrginName,jdbcType=VARCHAR}
+				, #{attatch.atchSaveName,jdbcType=VARCHAR}
+				, #{attatch.atchSize,jdbcType=NUMERIC}
+				, SYSTIMESTAMP
+			)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<resultMap type="AttatchFileGroupVO" id="atchFileGroupMap">
+		<id property="atchId" column="ATCH_ID"/>
+		<collection property="atchfileList" ofType="AttatchFileVO" autoMapping="true" />
+	</resultMap>
+	
+	<select id="selectAttatchList" parameterType="int" resultMap="atchFileGroupMap">
+		SELECT  ATCH_ID
+				, ATCH_SEQ
+				, ATCH_MIME
+				, ATCH_ORGIN_NAME
+				, ATCH_SAVE_NAME
+				, ATCH_SIZE
+				, ATCH_DATE
+		FROM ATCH_FILE
+		WHERE ATCH_ID = #{atchId}		
+	</select>
+	
+	<select id="selectAttatch" parameterType="AttatchFileVO" resultType="AttatchFileVO">
+		SELECT  ATCH_ID
+				, ATCH_SEQ
+				, ATCH_MIME
+				, ATCH_ORGIN_NAME
+				, ATCH_SAVE_NAME
+				, ATCH_SIZE
+				, ATCH_DATE
+		FROM ATCH_FILE
+		WHERE ATCH_ID = #{atchId} AND ATCH_SEQ = #{atchSeq}
+	</select>
+	
+	<delete id="deleteAttatch" parameterType="AttatchFileVO">
+		DELETE FROM ATCH_FILE
+		WHERE ATCH_ID = #{atchId} AND ATCH_SEQ = #{atchSeq}
+	</delete>
+	
+	<delete id="deleteAttatchList" parameterType="int">
+		DELETE FROM ATCH_FILE
+		WHERE ATCH_ID = #{atchId}
+	</delete>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

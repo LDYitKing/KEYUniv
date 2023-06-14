@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.lecture.dao.LectEvalDAO">
+	<select id="selectLectEvalArtiList" resultType="LectEvalArtiVO">
+		SELECT LEA_NO   
+		        , LEA_QUE
+		        , LEA_CONTENT
+		FROM LECT_EVAL_ARTI
+	</select>
+	<select id="selectCourse" resultType="LectureEvaluationVO" parameterType="LectureEvaluationVO">
+		SELECT COURSE_NO, LECT_NO, LECT_NAME, STU_NO
+	    FROM MEMBER_COURSE 
+	    WHERE LECT_NO = #{lectNo} AND STU_NO=#{stuNo}
+	    AND COURSE_CDATE IS NULL
+	</select>
+	
+	<insert id="insertLectEval" parameterType="LectureEvaluationVO">
+		INSERT ALL
+		<foreach collection="lectEvalList" item="lectEval" index="idx">
+			INTO LECT_EVAL (
+			    COURSE_NO,
+			    STU_NO,
+			    LEA_NO,
+			    LE_ANSWER,
+			    LECT_NO
+			) VALUES (
+				#{courseNo,jdbcType=VARCHAR}
+				, #{stuNo,jdbcType=VARCHAR}
+				, #{lectEval.leaNo,jdbcType=VARCHAR}
+				, #{lectEval.leAnswer,jdbcType=VARCHAR}
+				, #{lectEval.lectNo,jdbcType=VARCHAR}
+			) 
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<select id="selectLectEvalList" parameterType="string" resultType="LectureEvaluationVO">
+		SELECT COURSE_NO, STU_NO, LEA_NO, LE_ANSWER
+		FROM LECT_EVAL
+		WHERE COURSE_NO=#{courseNo}
+	</select>
+	
+	<select id="selectAVGEval" resultType="LectEvalArtiVO" parameterType="string">
+		SELECT DISTINCT LEA.LEA_NO, LEA.LEA_QUE, AVG(LE_ANSWER) "avgAnswer"
+		FROM LECT_EVAL LE
+		    LEFT OUTER JOIN LECT_EVAL_ARTI LEA ON(LE.LEA_NO = LEA.LEA_NO)
+		WHERE LEA.LEA_NO &lt;&gt; '7'  
+		AND LE.LECT_NO = #{lectNo}
+		GROUP BY LEA.LEA_NO, LEA.LEA_QUE 
+		ORDER BY LEA.LEA_NO
+	</select>
+	
+	<select id="selectSevenEval" resultType="string" parameterType="string">
+		SELECT LE_ANSWER FROM LECT_EVAL WHERE LEA_NO = '7' AND LECT_NO = #{lectNo} 
+	</select>
+</mapper>

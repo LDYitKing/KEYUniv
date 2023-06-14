@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.exam.dao.ExamTextDAO">
+	
+	<insert id="insertExamText" parameterType="ExamQuestionVO">
+		INSERT ALL
+		<foreach collection="examTextList" item="exam" index="idx">
+		INTO EXAM_TEXT( 
+			ET_NO
+			,EQ_NO
+			,ET_QUE
+			,ET_RIGHT_ANSWER
+		)VALUES(
+		#{exam.etNo,jdbcType=VARCHAR}
+		, #{eqNo,jdbcType=VARCHAR}
+		, #{exam.etQue,jdbcType=VARCHAR}
+		, #{exam.etRightAnswer,jdbcType=VARCHAR}
+		)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+
+</mapper>

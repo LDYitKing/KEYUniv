@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.academicyear.dao.AcademicYearDAO">
+<select id="selectNowAcademicYear" resultType="AcademicYearVO">
+	SELECT  
+    	TO_NUMBER(SUBSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),1,INSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),'-')-1)) AS AY_YEAR,
+    	CASE WHEN(SUBSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),INSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),'-')+1))IN('03','04','05','06','07','08') THEN '1' ELSE '2' END AS AY_SEMESTER
+	FROM DUAL
+</select>
+</mapper>

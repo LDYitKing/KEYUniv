@@ -1,0 +1,183 @@
+@charset "UTF-8";
+
+/* 폰트 사이즈 조정 */
+.lect-li *{
+    font-size: 103%;  
+}
+#basketTb *, .inBasket * {
+    font-size: 103%;  
+}
+#lectModalBody *{
+    font-size: 103%;  
+}
+
+/* 수강신청 안내 페이지 */
+#infoMainBody {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+}
+
+.infoDiv {
+	/* 	border: 1px solid blue; */
+	
+}
+
+#sugangInfoTb {
+	padding: 20px;
+}
+
+.infoContent {
+	background-color: #f2f2f2
+}
+
+/* 장바구니 화면 */
+#basketDiv{
+	display: grid;
+    grid-template-columns: 1fr 1fr;
+    gird-column-gap: 2px;
+}
+#lectDiv, #basketTbDiv{
+/* 	border: 1px solid green; */
+	height: auto;
+}
+#lectSearchDiv{
+	border: 1px solid #80808050;
+	border-radius: 7px;	
+}
+#basketTbDiv{
+}
+#basketTb{
+	height: 660px;
+	table-layout: fixed;
+}
+.wkTh{
+	text-align: center;
+	width: 14%;	
+}
+.timeTh {
+	vertical-align : top;
+	text-align: right;
+/* 	height: 40px; */
+}
+.timeTb{
+	height: 40px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;	
+}
+
+#lectListDiv, #basketListDiv, #favoriteListDiv, #allLectListDiv{
+	height: 655px;
+}
+#lectListDiv{
+}
+.lectListTitle{
+	text-decoration: underline;	
+	font-weight: 600;
+}
+.sugangListUL li{
+	background-color: #f2f2f2b3;
+}
+#lectListUl #deleteBtn{
+	border: 1px solid #03a9f4;
+}
+#lectListUl #deleteBtn:hover{
+	background-color: #03a9f4;
+	color: white;
+}
+
+.inBasketThead{
+	margin-bottom: 0;
+	border-bottom: 2px solid #f2f2f2;
+	border-radius: 0px;
+}
+.tbCaption{
+	text-align: right;
+	font-style: italic;
+	padding: 0;
+}
+.inBasketTbody{
+	height: 200px;
+	table-layout: fixed;
+	border-bottom: 2px solid #f2f2f2;
+	border-radius: 0px;
+}
+
+/* 수강신청 강의 상세정보 모달 */
+#lectInfoModal{
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    left: 0px; 
+    right: 0px;
+    background-color: rgba(128, 128, 128, 0.5);
+    z-index: 9999999999;
+    display: none;
+}
+
+#lectModalDiv{
+    width: 60%;
+    height: 85%;
+    margin: 90px auto;
+    background-color: white;
+} 
+
+.table.table-ellipsis tbody td {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lectInfoTb th{
+	background-color: #f2f2f2;	
+}
+
+/* 장바구니 상세 정보 검색 모달 */
+#searchModal{
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    left: 0px; 
+    right: 0px;
+    z-index: 9999999999;
+    display: none;
+}
+
+#searchModalDiv{
+    width: 50%;
+/*     height: 40%; */
+    margin: 80px auto;
+    background-color: white;
+} 
+
+.searchInput{
+	width: auto;
+}
+.searchTable{
+	border: 1px solid white;
+}
+
+/* 수강신청 내역 화면 */
+#suganglistDiv{
+	display: grid;
+    grid-template-columns: 1fr 1fr;
+    gird-column-gap: 2px;
+}
+#suganglistDiv, #suganglistTbDiv{
+/* 	border: 1px solid green; */
+	height: auto;
+}
+#suganglistTb{
+	height: 660px;
+	table-layout: fixed;
+}
+
+/* 수강신청 화면 */
+#allListDiv{
+	display: grid;
+	grid-template-columns: 1fr 1fr;	
+	gird-column-gap: 2px;
+}
+
+
+

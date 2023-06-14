@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.lecture.dao.LectureDataDAO">
+	<sql id="searchFrag">
+			<if
+				test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'title'">
+						AND INSTR(LD_TITLE, #{simpleCondition.searchWord}) > 0
+					</when>
+					<when test="simpleCondition.searchType eq 'content'">
+						AND INSTR(LD_CONTENT, #{simpleCondition.searchWord}) >
+						0
+					</when>
+					<otherwise>
+					AND	(INSTR(LD_TITLE, #{simpleCondition.searchWord}) > 0
+						OR
+						INSTR(LD_CONTENT, #{simpleCondition.searchWord}) > 0)
+					</otherwise>
+				</choose>
+			</if>
+	</sql>
+	<resultMap type="LectureDataVO" id="lectureDataList"
+		autoMapping="true">
+		<id column="LD_NO" property="ldNo" />
+	</resultMap>
+
+	<select id="selectTotalLectureRecord" parameterType="Pagination"
+		resultType="int">
+		SELECT COUNT(*)
+		FROM LECTURE_DATA
+		WHERE LECT_NO = #{detailCondition.lectNo}
+		<include refid="searchFrag" />
+	</select>
+	<select id="selectLectureDataTotalList"
+		resultMap="lectureDataList">
+		SELECT * FROM LECTURE
+	</select>
+
+	<select id="selectLectureDataList" resultMap="lectureDataList"
+		parameterType="string">
+		SELECT B.*
+		FROM(
+		SELECT ROWNUM RNUM, A.*
+		FROM(
+		SELECT LD.LD_NO,
+		LD.LD_TITLE, L.LECT_NAME,
+		LD.LD_CONTENT, LD.LD_WDATE, (
+		SELECT COUNT(*)
+		FROM ATCH_FILE
+		WHERE LD_FILE = ATCH_ID
+		) ATCH_COUNT
+		FROM
+		LECTURE_DATA LD
+		JOIN LECTURE L ON LD.LECT_NO = L.LECT_NO
+		WHERE LD.LECT_NO =
+		#{detailCondition.lectNo}
+		<include refid="searchFrag" />
+		ORDER BY LD.LD_NO DESC
+		) A
+		) B
+    <![CDATA[
+        WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+    ]]>
+	</select>
+	<insert id="insertLectureData" parameterType="LectureDataVO">
+		<selectKey resultType="string" order="BEFORE"
+			keyProperty="ldNo">
+			SELECT 'LD'||LPAD(LECTUREDATA_SEQ.NEXTVAL,2,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO LECTURE_DATA
+		(
+		LD_NO,
+		LECT_NO,
+		LD_TITLE,
+		LD_CONTENT,
+		LD_WDATE,
+		LD_FILE
+		) VALUES (
+		#{ldNo, jdbcType=VARCHAR},
+		#{lectNo,
+		jdbcType=VARCHAR},
+		#{ldTitle, jdbcType=VARCHAR},
+		#{ldContent,
+		jdbcType=VARCHAR},
+		SYSDATE,
+		#{ldFile, jdbcType=NUMERIC}
+		)
+	</insert>
+
+	<resultMap type="LectureDataVO" id="lectureDataMap"
+		autoMapping="true">
+		<id property="ldNo" column="LD_NO" />
+		<association property="atchFileGroup"
+			javaType="AttatchFileGroupVO">
+			<id property="atchId" column="ATCH_ID" />
+			<collection property="atchfileList" ofType="AttatchFileVO"
+				autoMapping="true" />
+		</association>
+	</resultMap>
+
+	<select id="selectLecutureForAuth" parameterType="string"
+		resultMap="lectureDataMap">
+		SELECT LD_NO,
+		LECT_NO,
+		LD_TITLE,
+		LD_CONTENT,
+		LD_WDATE,
+		LD_FILE,
+		ATCH_ID, ATCH_SEQ, ATCH_MIME
+		, ATCH_ORGIN_NAME, ATCH_SAVE_NAME,
+		ATCH_SIZE
+		, ATCH_DATE
+		FROM LECTURE_DATA LEFT OUTER JOIN ATCH_FILE
+		ON(LD_FILE = ATCH_ID)
+		WHERE LD_NO = #{ldNo}
+	</select>
+
+
+	<delete id="deleteLectureData" parameterType="LectureDataVO">
+		DELETE FROM
+		LECTURE_DATA
+		WHERE LD_NO = #{ldNo}
+	</delete>
+	<update id="updateLectureData" parameterType="LectureDataVO">
+		UPDATE LECTURE_DATA
+		SET
+		LD_TITLE = #{ldTitle},
+		LD_CONTENT = #{ldContent},
+		LD_FILE =
+		#{ldFile},
+		LD_WDATE = SYSDATE
+		WHERE LD_NO = #{ldNo}
+	</update>
+</mapper>

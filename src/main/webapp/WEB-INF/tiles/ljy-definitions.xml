@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tiles-definitions PUBLIC "-//Apache Software Foundation//DTD Tiles Configuration 3.0//EN" "http://tiles.apache.org/dtds/tiles-config_3_0.dtd" >
+<tiles-definitions>
+  <definition name="parent" template="/WEB-INF/views/template_theme.jsp">
+  	<put-attribute name="title" value="KEY UNIV"/>
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="mainnav" value="/includee/mainnav_all.jsp" />
+  	<put-attribute name="sideBar" value="/includee/sideBar.jsp" />
+  	<put-attribute name="header" value="/includee/header.jsp" />
+  	<put-attribute name="footer" value="/includee/footer.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp"/>
+  </definition>
+  
+  <definition name="group/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/group/{1}.jsp" />
+  </definition>
+  
+  <definition name="sugang/*" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/sugang/{1}.jsp" />
+  </definition>
+  
+  <definition name="member/passwdForm" extends="parent">
+  	<put-attribute name="body" value="/WEB-INF/views/member/passwdForm.jsp" />
+  </definition>
+  
+  
+  <definition name="curri/everyCurri/*" extends="parent">
+    <put-attribute name="body" value="/WEB-INF/views/curri/everyCurri/{1}.jsp"/>
+  </definition>
+  	
+  
+  <definition name="login" template="/WEB-INF/views/login.jsp">
+  	<put-attribute name="preScript" value="/includee/preScript.jsp" />
+  	<put-attribute name="postScript" value="/includee/postScript.jsp"/>
+  </definition>
+  
+</tiles-definitions>

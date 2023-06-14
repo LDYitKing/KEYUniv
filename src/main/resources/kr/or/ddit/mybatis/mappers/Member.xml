@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.member.dao.MemberDAO">
+
+   <resultMap type="MemberVO" id="memberMap" autoMapping="true">
+         <id property="memNo" column="MEM_NO"/>
+         <discriminator javaType="string" column="MEM_ROLE">
+            <case value="ROLE_PRO" resultType="ProfessorVO"></case>
+            <case value="ROLE_STU" resultType="StudentVO"></case>
+            <case value="ROLE_EMP" resultType="EmployeeVO"></case>
+         </discriminator>
+   </resultMap>
+   
+   <sql id="allMember">
+       WITH DEPTVIEW AS (
+           SELECT DEPT_NO, C.COL_NO, DEPT_NAME, COL_NAME 
+           FROM DEPARTMENT D INNER JOIN COLLEAGE C
+               ON(C.COL_NO = D.COL_NO)
+       )
+      SELECT 
+        M.MEM_NO
+        , M.MEM_PASS
+        , M.MEM_NAME
+        , M.MEM_GENDER
+        , M.MEM_RRNO1
+        , M.MEM_RRNO2
+        , M.MEM_TEL
+        , M.MEM_ZIP
+        , M.MEM_ADD1
+        , M.MEM_ADD2
+        , M.MEM_EMAIL
+        , M.MEM_IP
+        , M.MEM_ROLE
+        , M.MEM_PHOTO
+        
+        , S.STU_NO
+        , S.DR_NO
+        , S.STU_STATE
+        , S.STU_EDATE
+        , S.STU_GDATE
+        , S.STU_EMPLOY
+        , S.STU_YEAR   
+        
+        , P.PRO_NO
+        , P.PRO_POS
+        , P.PRO_LOE
+        , P.PRO_CAREER
+        , P.PRO_EDATE
+        , P.PRO_RDATE
+  
+        , E.EMP_NO
+        , E.EMP_DEPT
+        , E.EMP_POS
+        , E.EMP_EDATE
+        , E.EMP_RDATE       
+        
+        , D.DEPT_NO          
+        , D.DEPT_NAME
+        , D.COL_NO
+        , D.COL_NAME
+
+        , F.ATCH_SAVE_NAME
+        , F.ATCH_ORGIN_NAME
+           
+      FROM MEMBER M
+         LEFT OUTER JOIN PROFESSOR P ON(MEM_NO = PRO_NO)
+         LEFT OUTER JOIN STUDENT S ON(MEM_NO = STU_NO)
+         LEFT OUTER JOIN EMPLOYEE E ON(MEM_NO = EMP_NO)
+           
+         LEFT OUTER JOIN DEPTVIEW D
+            ON(D.DEPT_NO = P.DEPT_NO OR D.DEPT_NO = S.DEPT_NO) 
+         LEFT OUTER JOIN ATCH_FILE F
+            ON(MEM_PHOTO=ATCH_ID)
+   </sql>
+   
+   <select id="selectMember" resultMap="memberMap" parameterType="string">
+        <include refid="allMember" />
+      WHERE MEM_NO = #{memNo}
+   
+   </select>
+   
+   <select id="searchId" resultMap="memberMap" parameterType="MemberVO">
+        <include refid="allMember" />
+        WHERE MEM_NAME = #{memName}
+           AND MEM_RRNO1 = #{memRrno1}
+           AND MEM_ROLE = #{memRole}
+      
+   </select>
+   
+   <select id="searchPasswd" resultMap="memberMap" parameterType="MemberVO">
+        <include refid="allMember" />
+        WHERE MEM_NO = #{memNo}
+           AND MEM_EMAIL = #{memEmail}
+   </select>
+   
+   <update id="updateMemberPasswd" parameterType="MemberVO">
+         UPDATE MEMBER
+         SET MEM_PASS = #{memPass}
+         WHERE MEM_NO = #{memNo}
+   </update>
+   
+   <insert id="insertMember" parameterType="MemberVO">
+   		INSERT INTO MEMBER(
+   			MEM_NO
+			,MEM_PASS
+			,MEM_NAME
+			,MEM_GENDER
+			,MEM_RRNO1
+			,MEM_RRNO2
+			,MEM_TEL
+			,MEM_ZIP
+			,MEM_ADD1
+			,MEM_ADD2
+			,MEM_EMAIL
+			,MEM_IP
+			,MEM_ROLE
+			,MEM_PHOTO
+   		)VALUES(
+   			#{memNo,jdbcType=VARCHAR}
+			, #{memPass,jdbcType=VARCHAR}
+			, #{memName,jdbcType=VARCHAR}
+			, #{memGender,jdbcType=VARCHAR}
+			, #{memRrno1,jdbcType=VARCHAR}
+			, #{memRrno2,jdbcType=VARCHAR}
+			, #{memTel,jdbcType=VARCHAR}
+			, #{memZip,jdbcType=VARCHAR}
+			, #{memAdd1,jdbcType=VARCHAR}
+			, #{memAdd2,jdbcType=VARCHAR}
+			, #{memEmail,jdbcType=VARCHAR}
+			, #{memIp,jdbcType=VARCHAR}
+			, #{memRole,jdbcType=VARCHAR}
+			, #{memPhoto,jdbcType=NUMERIC}
+   		)
+   </insert>
+   
+   <update id="updateMember" parameterType="MemberVO">
+   		UPDATE MEMBER
+   		SET
+			MEM_NAME=#{memName,jdbcType=VARCHAR}
+			,MEM_TEL=#{memTel,jdbcType=VARCHAR}
+			,MEM_ZIP=#{memZip,jdbcType=VARCHAR}
+			,MEM_ADD1=#{memAdd1,jdbcType=VARCHAR}
+			,MEM_ADD2=#{memAdd2,jdbcType=VARCHAR}
+			,MEM_EMAIL=#{memEmail,jdbcType=VARCHAR}
+			,MEM_PHOTO=#{memPhoto,jdbcType=NUMERIC}
+		WHERE MEM_NO=#{memNo,jdbcType=NUMERIC}
+			   			
+   </update>
+   
+
+
+	<select id="selectMemberList" resultMap="studentMap">
+		SELECT 	
+			MEM_NO
+			, MEM_NAME
+			, DEPT_NO
+			, STU_NO
+		FROM MEMBER_COURSE 
+		
+	</select>
+
+<resultMap type="StudentVO" id="studentMap" autoMapping="true">
+	<id property="stuNo" column="STU_NO"/>
+
+<!-- 헤즈 어 관계 -->
+	<association property="member" javaType="memberVO" autoMapping="true">
+<!-- 하나의 그룹이다라는 걸 알기위해 atchId 이퀄 설정 확인  -->
+		<id property="memNo" column="MEM_NO"/>
+	</association>
+	</resultMap>
+
+
+</mapper>
+

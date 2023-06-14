@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.lecture.dao.LectureDAO">
+
+	<sql id="searchFrag">
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(searchData)">
+			AND (
+				INSTR(LECT_NAME, #{searchData}) > 0 
+				OR INSTR(LECT_NO, #{searchData}) > 0 
+				OR INSTR(MEM_NAME, #{searchData}) > 0
+			)
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(subComm)">
+			AND SUB_COMM = #{subComm}
+		</if>
+		<if test="subGrade != null">
+			AND SUB_GRADE = #{subGrade}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(colNo)">
+			AND COL_NO = #{colNo}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(deptNo)">
+			AND DEPT_NO = #{deptNo}
+		</if>
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(ltdDay)">
+			AND LTD_DAY = #{ltdDay}
+		</if>
+		
+	</sql>
+
+	<resultMap type="LectureVO" id="lectListMap" autoMapping="true">
+		<id property="lectNo" column="LECT_NO" />
+		<collection property="lectDetailList" ofType="LectureTimePlaceVO" autoMapping="true" />
+	</resultMap>
+	<select id="selectLectureList" resultMap="lectListMap" parameterType="LectureVO">
+		SELECT 
+			LECT_NO
+			,LECT_NAME
+		    ,LECT_MM
+		    ,LECT_PM			
+			,MEM_NAME
+			,SUB_GRADE
+			,SUB_SCR
+			,SUB_STATE
+			,SUB_COMM_NAME
+			,COL_NAME
+			,DEPT_NAME
+			
+			,LT_NO
+			,LTD_NO
+			,LTD_DAY
+			,LTD_PERIOD
+			,LR_NO
+			,LR_NUM
+			,BUIL_NO
+			,BUIL_NAME
+			
+		FROM LECTURE_VIEW
+		WHERE AY_YEAR=#{ayYear} AND AY_SEMESTER=#{aySemester} 
+		<include refid="searchFrag" />
+	</select>
+	
+	<resultMap type="LectureVO" id="lectDetailMap" autoMapping="true">
+		<id property="lectNo" column="LECT_NO" />
+		<collection property="lectDetailList" ofType="LectureTimePlaceVO" autoMapping="true" />
+		<collection property="lectPlanList" ofType="LectureWeekPlanVO" autoMapping="true" />
+	</resultMap>	
+	<select id="selectLecture" resultMap="lectDetailMap" parameterType="string">
+	SELECT
+	    LV.LECT_NO
+	    ,SUB_NO
+	    ,PRO_NO
+	    ,LECT_NAME
+	    ,LECT_EXP
+	    ,LECT_MM
+	    ,LECT_PM
+	    ,LECT_ONF
+	    ,LECT_ONF_NAME
+	    ,LECT_STATE
+	    ,LECT_STATE_NAME
+	    ,AY_YEAR
+	    ,AY_SEMESTER
+	    ,MEM_NAME
+	    ,DEPT_NO
+	    ,COL_NO
+	    ,SUB_NAME
+	    ,SUB_EXP
+	    ,SUB_GRADE
+	    ,SUB_HOURS
+	    ,SUB_SCR
+	    ,SUB_STATE
+	    ,SUB_REASON
+	    ,SUB_COMM
+	    ,SUB_COMM_NAME
+	    ,COL_NAME
+	    ,DEPT_NAME
+	    ,LT_NO
+	    ,LTD_NO
+	    ,LTD_DAY
+	    ,LTD_PERIOD
+	    ,LR_NO
+	    ,LR_NUM
+		,BUIL_NO
+		,BUIL_NAME
+	    
+	    ,LWP_NO
+	    ,LWP_WEEK
+	    ,LWP_CONTENT
+	FROM 
+	    LECTURE_VIEW LV LEFT OUTER JOIN LECTURE_WEEK_PLAN LWP
+	        ON(LV.LECT_NO = LWP.LECT_NO)
+	WHERE LV.LECT_NO = #{lectNo}
+	ORDER BY TO_NUMBER(LWP_WEEK), LTD_NO
+	</select>
+	
+	<insert id="insertLecture" parameterType="LectureVO">
+	<selectKey order="BEFORE" resultType="String" keyProperty="lectNo">
+		SELECT TO_NUMBER(SUBSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),1,INSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),'-')-1)) 
+			|| LPAD(NVL(TO_NUMBER(SUBSTR(MAX(LECT_NO), LENGTH( TO_NUMBER(SUBSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),1,INSTR(TO_CHAR(SYSDATE, 'YYYY-MM'),'-')-1)) )+2)), '0') +1, 3, '0')
+		FROM LECTURE
+	</selectKey>
+		INSERT INTO LECTURE (
+		    LECT_NO,
+		    SUB_NO,
+		    PRO_NO,
+		    LECT_NAME,
+		    LECT_EXP,
+		    LECT_MM,
+		    LECT_PM,
+		    LECT_ONF,
+		    LECT_STATE,
+		    AY_YEAR,
+		    AY_SEMESTER
+		) VALUES (
+			  #{lectNo,jdbcType=VARCHAR}
+			, #{subNo,jdbcType=VARCHAR}
+			, #{proNo,jdbcType=VARCHAR}
+			, #{lectName,jdbcType=VARCHAR}
+			, #{lectExp,jdbcType=VARCHAR}
+			, #{lectMm,jdbcType=NUMERIC}
+			, #{lectPm,jdbcType=NUMERIC}
+			, #{lectOnf,jdbcType=VARCHAR}
+			, #{lectState,jdbcType=VARCHAR}
+			, #{ayYear,jdbcType=NUMERIC}
+			, #{aySemester,jdbcType=NUMERIC}
+		)
+	</insert>
+	
+	<insert id="insertLectureTime" parameterType="LectureVO">
+		<selectKey keyProperty="ltNo" resultType="String" order="BEFORE">
+			SELECT NVL(MAX(TO_NUMBER(LT_NO)), 0) + 1
+			FROM LECTURE_TIME
+		</selectKey>
+		       INSERT ALL
+		       <foreach collection="lectDetailList" item="lectureDetail" index="idx" >
+		       	INTO LECTURE_TIME (
+				    LT_NO,
+				    LR_NO,
+				    LTD_NO,
+				    LECT_NO
+				) VALUES (
+					  #{idx} + #{ltNo}
+					, #{lectureDetail.lrNo,jdbcType=VARCHAR}
+					, #{lectureDetail.ltdNo,jdbcType=VARCHAR}
+					, #{lectureDetail.lectNo,jdbcType=VARCHAR}
+				)
+			  </foreach>
+			  SELECT * FROM DUAL
+	</insert>
+	
+	<insert id="insertLectureWeekPlan" parameterType="LectureVO">
+		<selectKey keyProperty="lwpNo" resultType="String" order="BEFORE">
+			SELECT NVL(MAX(TO_NUMBER(LWP_NO)), 0) + 1
+			FROM LECTURE_WEEK_PLAN
+		</selectKey>
+		INSERT ALL
+		<foreach collection="lectPlanList" item="lectPlan" index="idx"> 
+		INTO LECTURE_WEEK_PLAN (
+			    LWP_NO,
+			    LECT_NO,
+			    LWP_WEEK,
+			    LWP_CONTENT
+		) VALUES (
+			      #{idx} + #{lwpNo}
+				, #{lectPlan.lectNo,jdbcType=VARCHAR}
+				, #{lectPlan.lwpWeek,jdbcType=VARCHAR}
+				, #{lectPlan.lwpContent,jdbcType=VARCHAR}
+		)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+	
+	<insert id="insertLectureScoreCRTR" parameterType="LectureVO">
+		<selectKey keyProperty="scNo" resultType="String" order="BEFORE">
+			SELECT NVL(MAX(TO_NUMBER(SC_NO)), 0) + 1
+			FROM SCORE_CRTR
+		</selectKey>
+		INSERT ALL
+		<foreach collection="scoreCRTRList" item="scoreCRTR" index="idx"> 
+		 INTO SCORE_CRTR (
+			    SC_NO,
+			    LECT_NO,
+			    SC_TITLE,
+			    SC_RATIO
+		) VALUES (
+				 #{idx} + #{scNo}
+				, #{scoreCRTR.lectNo,jdbcType=VARCHAR}
+				, #{scoreCRTR.scTitle,jdbcType=VARCHAR}
+				, #{scoreCRTR.scRatio,jdbcType=NUMERIC}
+		)
+		</foreach>
+		SELECT * FROM DUAL
+	</insert>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~로컬스토리지에 저장할 데이터모음~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<select id="selectLectureTimePlaceList" resultType="LectureTimePlaceVO">
+		SELECT * FROM LECT_TIMEPLACE_VIEW
+	</select>
+	<select id="selectLectureRoomList" resultType="LectureRoomVO">
+		SELECT * FROM LECTURE_ROOM
+	</select>
+	<select id="selectLectureWeekPlanList" resultType="LectureWeekPlanVO">
+		SELECT * FROM LECTURE_WEEK_PLAN
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~로컬스토리지에 저장할 데이터모음~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+	<update id="updateLectPmPlus" parameterType="string">
+		UPDATE LECTURE 
+			SET LECT_PM=LECT_PM+1
+		WHERE LECT_NO = #{lectNo}
+	</update>
+	<update id="updateLectPmMinus" parameterType="string">
+		UPDATE LECTURE 
+			SET LECT_PM=LECT_PM-1
+		WHERE LECT_NO = #{lectNo}
+	</update>
+
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 교수별 강의리스트 조회 -->
+	<select id="selectProLectureList" parameterType="String" resultType="LectureVO">
+		SELECT
+            LECT_NO
+            , SUB_NO
+            , PRO_NO
+            , LECT_NAME
+            , LECT_EXP
+            , LECT_MM
+            , LECT_PM
+            , LECT_ONF
+            , LECT_STATE
+            , AY_YEAR
+            , AY_SEMESTER
+        FROM LECTURE
+        WHERE PRO_NO = #{proNo}
+	</select>
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 강의별 성적처리 기준 조회 -->
+	<select id="selectCrtrList" parameterType="String" resultType="ScoreCRTRVO">
+		SELECT
+	        SC_NO
+	        ,LECT_NO
+	        ,SC_TITLE
+	        ,SC_RATIO
+	        ,COMM_NAME
+	    FROM SCORE_CRTR
+	    LEFT OUTER JOIN COMM C ON (C.COMM_NO = SC_TITLE)
+	    WHERE LECT_NO = #{lectNo}
+	</select>
+
+
+</mapper>
+
+

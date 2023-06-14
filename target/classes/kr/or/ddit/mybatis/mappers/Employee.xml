@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.Employee.dao.EmployeeDAO">
+
+	<sql id="searchFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(empDept)">
+				AND EMP_DEPT = #{empDept}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(memName)">
+				AND INSTR(MEM_NAME, #{memName}) > 0
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(memNo)">
+				AND INSTR(MEM_NO, #{memNo}) > 0
+			</if>
+		</trim>
+	</sql>
+	
+	<select id="selectEmployeeList" resultType="EmployeeVO" parameterType="EmployeeVO">
+		SELECT
+			M.MEM_NO
+	        ,M.MEM_NAME
+	        ,DECODE(MEM_GENDER, 'M', '남', 'W', '여') MEM_GENDER
+	        ,M.MEM_TEL
+	        ,M.MEM_EMAIL
+	        ,M.MEM_ROLE			
+		
+			,E.EMP_NO
+			,E.EMP_DEPT
+			
+			,F.ATCH_ORGIN_NAME
+	        ,F.ATCH_SAVE_NAME  
+		FROM 
+			MEMBER M INNER JOIN EMPLOYEE E
+				ON (M.MEM_NO = E.EMP_NO)
+			LEFT OUTER JOIN ATCH_FILE F
+				ON (M.MEM_PHOTO = F.ATCH_ID) 
+		<include refid="searchFrag" />
+	</select>
+	
+	<select id="selectEmployee" resultType="EmployeeVO" parameterType="string">
+		SELECT 
+			M.MEM_NO
+			,M.MEM_NAME
+			,M.MEM_GENDER
+			,M.MEM_RRNO1
+			,M.MEM_RRNO2
+			,M.MEM_TEL
+			,M.MEM_ZIP
+			,M.MEM_ADD1
+			,M.MEM_ADD2
+			,M.MEM_EMAIL
+			,M.MEM_ROLE
+			,M.MEM_PHOTO
+			
+			,F.ATCH_ORGIN_NAME
+			,F.ATCH_SAVE_NAME
+			
+			,E.EMP_NO
+			,E.EMP_DEPT
+			,E.EMP_POS
+			,E.EMP_EDATE
+			,E.EMP_RDATE
+				
+		FROM 
+			MEMBER M INNER JOIN EMPLOYEE E
+				ON (M.MEM_NO = E.EMP_NO)
+			LEFT OUTER JOIN ATCH_FILE F
+				ON (M.MEM_PHOTO = F.ATCH_ID)		
+		
+		WHERE M.MEM_NO=#{memNo}
+	</select>
+</mapper>

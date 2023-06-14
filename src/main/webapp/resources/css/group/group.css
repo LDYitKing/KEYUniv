@@ -1,0 +1,38 @@
+@charset "UTF-8";
+#groupCardBody{
+	display: grid;
+	grid-template-columns: 1.2fr 3fr;
+}
+#groupFormDiv{
+}
+#groupListDiv{
+}
+#searchForm{
+	display: grid;
+	grid-template-columns: 3fr 1fr;
+}
+#listTableDiv{
+	height: 500px;
+	border: 1px solid #f2f2f2;
+	
+}
+.proTa{
+	width:100%;
+}
+
+.inputContent{
+/* 	border: none; */
+}
+#profileImgDiv{
+	overflow: hidden;
+	margin: 0 auto;
+}
+#profileImg{
+	width: 200px;
+	object-fit: cover;
+	
+}
+
+#profileTb th, #proTableTb th, #empTableTb th{
+   background-color: rgb(217, 217, 217, 0.5);
+}

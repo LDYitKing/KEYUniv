@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.curri.dao.MyCurriDAO">
+	<sql id="searchFrag">
+		FROM
+		SUBJECT A INNER JOIN DEPARTMENT B ON (A.DEPT_NO = B.DEPT_NO)
+		INNER JOIN COLLEAGE C ON (B.COL_NO = C.COL_NO)
+		INNER JOIN COMM D ON (A.SUB_COMM = D.COMM_NO)
+		INNER JOIN COMM E ON (A.SUB_STATE = E.COMM_NO)
+	</sql>
+	<sql id="favoritesearchFrag">
+		FROM
+		FAVORITES F INNER JOIN SUBJECT S ON (F.SUB_NO =
+		S.SUB_NO)
+		INNER JOIN
+		DEPARTMENT D ON (S.DEPT_NO = D.DEPT_NO)
+		INNER JOIN
+		COMM C ON
+		(S.SUB_COMM = C.COMM_NO)
+		WHERE MEM_NO = #{memNo}
+	</sql>
+	<select id="subjectList" parameterType="string"
+		resultType="SubjectVO">
+		SELECT G.*
+		FROM
+		(SELECT ROWNUM RNUM,F.*
+		FROM(
+		SELECT
+		A.SUB_NO,
+		B.DEPT_NAME,
+		C.COL_NAME,
+		A.SUB_NAME,
+		A.SUB_GRADE,
+		A.SUB_SCR,
+		A.SUB_HOURS,
+		D.COMM_NAME
+		FROM SUBJECT A LEFT JOIN DEPARTMENT B ON
+		(A.DEPT_NO=B.DEPT_NO)
+		LEFT JOIN COLLEAGE C ON (A.COL_NO=C.COL_NO)
+		LEFT
+		JOIN COMM D ON (A.SUB_COMM=D.COMM_NO)
+		WHERE SUB_STATE='B002'AND
+		A.SUB_NO NOT IN (SELECT SUB_NO FROM FAVORITES)
+		)F
+		)G
+	</select>
+
+
+	<insert id="insertMyCurri" parameterType="CurriVO">
+		<selectKey resultType="string" order="BEFORE"
+			keyProperty="curriNo">
+			SELECT 'CR'||LPAD(MY_CURRI_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO CURRI
+		(
+		CURRI_NO,
+		CURRI_DESIGNER,
+		CURRI_NAME,
+		CURRI_RDATE
+		)
+		VALUES(
+		#{curriNo,jdbcType=VARCHAR},
+		#{curriDesigner,jdbcType=VARCHAR},
+		#{curriName,jdbcType=VARCHAR},
+		SYSDATE
+		)
+	</insert>
+	<insert id="insertCurriDetail" parameterType="CurriDetailVO">
+		<selectKey resultType="string" order="BEFORE"
+			keyProperty="cdNo">
+			SELECT 'CD'||LPAD(CURRI_DETAIL_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO CURRI_DETAIL
+		(CD_NO,
+		SUB_NO,
+		CURRI_NO,
+		CD_PRIORITY
+		) VALUES(
+		#{cdNo,jdbcType=VARCHAR},
+		#{subNo,jdbcType=VARCHAR},
+		#{curriNo,jdbcType=VARCHAR},
+		#{cdPriority,jdbcType=VARCHAR}
+		)
+	</insert>
+	<select id="selectMemCurri" parameterType="CurriVO">
+		SELECT G.*
+		FROM
+		(SELECT
+		ROWNUM RNUM,F.*
+		FROM(SELECT
+		CURRI_NO,CURRI_NAME,CURRI_RDATE
+		FROM CURRI
+		WHERE CURRI_DESIGNER =
+		#{curriDesigner}
+		)F
+		)G
+	</select>
+
+	<select id="curriDetailList" parameterType="CurriDetailVO">
+		SELECT
+		A.CD_NO,A.CD_PRIORITY,A.CURRI_NO,A.SUB_NO,C.SUB_NAME,D.COMM_NAME
+		FROM
+		CURRI_DETAIL
+		A
+		LEFT JOIN CURRI B ON(A.CURRI_NO = B.CURRI_NO)
+		LEFT JOIN
+		SUBJECT C ON(A.SUB_NO =C.SUB_NO)
+		LEFT JOIN COMM D
+		ON(C.SUB_COMM=D.COMM_NO)
+		WHERE B.CURRI_NO =#{curriNo}
+		ORDER BY
+		A.CD_PRIORITY
+	</select>
+
+	<select id="selectsubjectList" parameterType="map"
+		resultType="SubjectVO">
+		SELECT
+		A.SUB_NO,A.DEPT_NO,C.COL_NAME,
+		B.CD_NO,B.CD_PRIORITY,
+		A.SUB_NAME,A.SUB_EXP,A.SUB_GRADE,
+		A.SUB_HOURS,A.SUB_SCR,D.COMM_NAME,
+		A.SUB_STATE,A.SUB_REASON,B.CURRI_NO
+		FROM SUBJECT A LEFT JOIN
+		CURRI_DETAIL B ON(A.SUB_NO = B.SUB_NO)
+		LEFT JOIN COLLEAGE C
+		ON(A.COL_NO=C.COL_NO)
+		LEFT JOIN COMM D ON(A.SUB_COMM=D.COMM_NO)
+		WHERE
+		A.SUB_NO = #{subNo}
+		AND
+		B.CURRI_NO = #{curriNo}
+	</select>
+	<delete id="deleteCurriDetail" parameterType="CurriDetailVO">
+		DELETE FROM
+		CURRI_DETAIL WHERE CD_NO IN (SELECT CD_NO FROM CURRI_DETAIL A LEFT
+		JOIN SUBJECT B ON A.SUB_NO = B.SUB_NO WHERE CD_NO
+		= #{cdNo})
+	</delete>
+	<delete id="deleteCurri" parameterType="CurriVO">
+		DELETE FROM CURRI
+		WHERE
+		CURRI_NO = #{curriNo}
+	</delete>
+
+	<update id="updateCurriDetail" parameterType="CurriDetailVO">
+		UPDATE CURRI_DETAIL
+		SET
+		CD_PRIORITY=#{cdPriority}
+		WHERE CD_NO =#{cdNo}
+		AND CURRI_NO =
+		#{curriNo}
+	</update>
+	<select id="selectCurriTd" parameterType="map"
+		resultType="CurriDetailVO">
+		SELECT CD_NO,SUB_NO,CURRI_NO,CD_PRIORITY
+		FROM CURRI_DETAIL
+		WHERE CURRI_NO = #{curriNo}
+		AND SUB_NO = #{subNo}
+	</select>
+
+	<select id="selectFavoriteList" parameterType="string"
+		resultType="FavoriteVO">
+		SELECT G.*
+		FROM
+		(SELECT ROWNUM RNUM,F.*
+		FROM(
+		SELECT
+		C.DEPT_NAME,
+		B.SUB_NO,
+		B.SUB_NAME,
+		D.COMM_NAME,
+		B.SUB_GRADE,
+		B.SUB_SCR,
+		SUB_HOURS
+		FROM FAVORITES A
+		LEFT JOIN SUBJECT B ON (A.SUB_NO = B.SUB_NO)
+		LEFT JOIN
+		DEPARTMENT C ON(B.DEPT_NO=C.DEPT_NO)
+		LEFT JOIN COMM D ON(B.SUB_COMM =
+		D.COMM_NO)
+		WHERE MEM_NO = #{memNo}
+		)F
+		)G
+		ORDER BY G.RNUM
+	</select>
+</mapper>

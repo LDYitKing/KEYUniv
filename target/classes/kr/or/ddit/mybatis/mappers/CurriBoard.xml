@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.curri.dao.CurriBoardDAO">
+
+	<insert id="insertCurriBoard" parameterType="CurriBoardVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="cbNo">
+			SELECT CURRI_BOARD_SEQ.NEXTVAL
+			FROM DUAL
+		</selectKey>
+		INSERT INTO CURRI_BOARD (
+		    CB_NO
+		    ,CB_TITLE
+		    ,CB_WRITER
+		    ,CB_CONTENT
+		    ,CURRI_NO
+		    ,MEM_NAME
+		    
+		    
+		) VALUES (
+		    #{cbNo}
+		    , #{cbTitle,jdbcType=VARCHAR}
+		    , #{cbWriter,jdbcType=VARCHAR}
+		    , #{cbContent,jdbcType=VARCHAR}
+		    , #{curriNo,jdbcType=VARCHAR}
+			, #{memName,jdbcType=VARCHAR}
+		)
+	</insert>
+	
+	<sql id="searchTagPagingQuery">
+		SELECT DISTINCT
+                  C.CB_NO
+                  , C.CB_TITLE
+                  , C.CB_WRITER
+                  , C.CB_CNT
+                  , C.CB_WDATE
+                  , C.CURRI_NO
+                  , C.MEM_NAME
+                  , C.CB_CONTENT
+		FROM
+		    CURRI_BOARD C LEFT OUTER JOIN TAG T
+                      ON(C.CB_NO=T.CB_NO)
+	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.tag)">
+		WHERE TAG_CONTENT LIKE #{detailCondition.tag} || '%'
+	</if> 	     
+    
+        ORDER BY CB_WDATE DESC
+	</sql>
+	
+	<select id="selectTotalRecord" parameterType="Pagination" resultType="int">
+        SELECT COUNT(CB_NO)
+        FROM (
+        	<include refid="searchTagPagingQuery" />
+        	)
+
+	</select>
+	
+	<resultMap type="curriBoardVO" id="curriBoardMap" autoMapping="true">
+		<id property="cbNo" column="CB_NO"/>
+		<collection property="tagList" ofType="TagVO" autoMapping="true">
+			<id property="tagNo" column="TAG_NO"/>
+		</collection>
+	</resultMap>	
+	<select id="selectCurriBoardList" parameterType="Pagination" resultMap="curriBoardMap">
+		SELECT 
+		    C.RNUM
+		    , C.CB_NO
+		    , C.CB_WRITER
+		    , C.CB_TITLE
+		    , C.CB_CNT
+		    , C.CB_WDATE
+		    , C.CURRI_NO
+		    , C.MEM_NAME
+		    , C.CB_CONTENT
+		        
+		    , T.TAG_NO
+		    , T.TAG_CONTENT
+		FROM (
+			      SELECT B.*
+			      FROM(
+			         SELECT ROWNUM RNUM, A.*
+			         FROM(
+						<include refid="searchTagPagingQuery" />
+			          ) A  
+			       ) B      
+			       WHERE RNUM BETWEEN #{startRow} AND #{endRow}	
+		       
+			) C LEFT OUTER JOIN TAG T
+				ON(C.CB_NO = T.CB_NO)
+		ORDER BY C.RNUM, T.TAG_NO       
+	</select>
+		
+	<select id="selectCurriBoard" parameterType="string" resultMap="curriBoardMap">
+		SELECT
+		    C.CB_NO
+		    ,CB_TITLE
+		    ,CB_WRITER
+		    ,CB_CONTENT
+		    ,CB_CNT
+		    ,CB_WDATE
+		    ,CURRI_NO
+		    ,MEM_NAME
+		    
+		    ,T.TAG_NO
+		    ,T.TAG_CONTENT
+		    
+		FROM
+		    CURRI_BOARD C LEFT OUTER JOIN TAG T
+		    ON (C.CB_NO = T.CB_NO)
+		WHERE C.CB_NO=#{cbNo}
+		ORDER BY TAG_NO
+	</select>
+	
+	<update id="updateCurriCnt" parameterType="string">
+		UPDATE CURRI_BOARD
+		    SET CB_CNT = CB_CNT + 1  
+		WHERE
+		    CB_NO =#{cbNo}
+	</update>
+	
+	<delete id="deleteCurriBoard" parameterType="string">
+		DELETE FROM CURRI_BOARD
+		WHERE
+			CB_NO=#{cbNo}		
+	</delete>
+</mapper>
+
+

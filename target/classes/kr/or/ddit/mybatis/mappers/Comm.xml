@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.commons.dao.CommDAO">
+	<select id="selectCommList" resultType="CommVO">
+		SELECT COMM_NO, COMM_NAME
+		FROM COMM
+		<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(pre)">
+		WHERE INSTR(COMM_NO, #{pre}) > 0
+		</if>
+	</select>
+	
+	<select id="selectStuLectList" resultType="LectureVO" parameterType="string">
+		SELECT LECT_NO, LECT_NAME 
+		FROM MEMBER_COURSE 
+		WHERE COURSE_CDATE IS NULL AND COURSE_STATE = 'I001' 
+		AND STU_NO=#{stuNo}
+		AND AY_YEAR = '2023' AND AY_SEMESTER= '1'
+	</select>
+	
+	<select id="selectProLectList" resultType="LectureVO" parameterType="string">
+		SELECT LECT_NO, LECT_NAME
+		FROM LECTURE 
+		WHERE LECT_STATE='J001' AND PRO_NO=#{proNo}
+		AND AY_YEAR = '2023' AND AY_SEMESTER= '1'
+	</select>
+</mapper>

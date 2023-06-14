@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.attendance.dao.AttendanceDAO">
+	
+	<resultMap type="AttendanceVO" id="attendStu" autoMapping="true">
+		<id property="attendNo" column="ATTEND_NO"/>
+		<collection property="studentList" ofType="StudentVO" autoMapping="true" />
+	</resultMap>
+	
+	<resultMap type="CourseVO" id="stuList" autoMapping="true">
+		<id property="stuNo" column="STU_NO"/>
+		<id property="courseNo" column="COURSE_NO"/>
+		<collection property="attendList" ofType="AttendanceVO" autoMapping="true" />
+	</resultMap>
+	
+	<resultMap type="AttendanceAdmitVO" id="attendAdmit" autoMapping="true">
+		<id property="aaNo" column="AA_NO"/>
+		<association property="attend" javaType="AttendanceVO" autoMapping="true" />
+		<association property="student" javaType="StudentVO" autoMapping="true" />
+	</resultMap>
+	
+	
+<!--///////// 교수의 수강학생리스트 조회, 통계자료(출석, 결석, 총), 수강학생 출석정보리스트, 출석정보 수정  /////////-->
+	<select id="selectCourseStu" resultMap="attendStu" parameterType="string">
+		SELECT MEM_NO, MEM_NAME, DEPT_NAME, MEM_EMAIL
+		FROM MEMBER_COURSE
+		WHERE LECT_NO = #{lectNo}
+		AND COURSE_CDATE IS NULL
+	</select>
+	
+	<select id="countStuAttend" resultType="int" parameterType="string">
+		SELECT COUNT(*) AS COUNT_ATTEND 
+		FROM ATTENDANCE 
+		WHERE STU_NO = #{stuNo} 
+		AND ATTEND_STATE &lt;&gt; 'D002'
+	</select>
+	
+	<select id="countStuDeattend" resultType="int" parameterType="string">
+		SELECT COUNT(*) AS COUNT_DEATTEND
+		FROM ATTENDANCE
+		WHERE STU_NO = #{stuNo}
+		AND ATTEND_STATE = 'D002'
+	</select>
+	
+	<select id="countCurrentAttend" resultType="int" parameterType="string">
+		WITH COURSEONE AS (
+		    SELECT COURSE_NO 
+		    FROM COURSE 
+		    WHERE LECT_NO = #{lectNo}
+		)
+		SELECT COUNT(*) 
+		FROM (
+			SELECT DISTINCT TO_CHAR(ATTEND_DATE)
+			FROM ATTENDANCE
+			WHERE COURSE_NO IN (SELECT COURSE_NO FROM COURSEONE)
+		)
+	</select>
+	
+	<select id="selectStuList" resultMap="stuList" parameterType="string">
+		SELECT 
+			M.STU_NO, M.COURSE_NO , 
+			MEM_NAME "student.memName", 
+			M.DEPT_NAME "student.deptName", 
+			M.MEM_EMAIL "student.memEmail", 
+			A.ATTEND_NO, A.ATTEND_DATE, A.ATTEND_STATE
+		FROM MEMBER_COURSE M
+		    LEFT OUTER JOIN ATTENDANCE A ON ( M.MEM_NO = A.STU_NO)
+		WHERE LECT_NO = #{lectNo}
+		AND COURSE_CDATE IS NULL
+		ORDER BY A.ATTEND_DATE
+	</select>
+	
+	<update id="updateAttend" parameterType="AttendanceVO">
+		UPDATE ATTENDANCE
+		SET ATTEND_STATE = #{attendState,jdbcType=VARCHAR}
+		WHERE ATTEND_NO = #{attendNo,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateAttendAdmitNo" parameterType="AttendanceAdmitVO">
+		UPDATE ATTENDANCE_ADMIT
+		SET 
+		    AA_STATE = #{aaState,jdbcType=VARCHAR}
+		    , AA_REFUSE = #{aaRefuse,jdbcType=VARCHAR}
+		WHERE AA_NO = #{aaNo,jdbcType=VARCHAR}
+	</update>
+	
+	<update id="updateAttendAdmitOK" parameterType="AttendanceAdmitVO">
+		UPDATE ATTENDANCE_ADMIT
+		SET 
+		    AA_STATE = #{aaState,jdbcType=VARCHAR}
+		WHERE AA_NO = #{aaNo,jdbcType=VARCHAR}
+	</update>
+<!--/////////////////////////////////////////////////////////////////////////////-->
+	
+<!--///////////////////////// 교수가 학생의 출석정보 전자출결로 입력하기 ////////////////////////-->
+	<update id="insertAttend" parameterType="AttendanceVO">
+		MERGE INTO ATTENDANCE A
+	    USING DUAL
+	    ON (TO_CHAR(A.ATTEND_DATE) = TO_CHAR(SYSDATE) AND STU_NO = #{stuNo,jdbcType=VARCHAR})
+	    WHEN MATCHED THEN
+	        UPDATE SET ATTEND_STATE = #{attendState,jdbcType=VARCHAR}
+	    WHEN NOT MATCHED THEN
+	        INSERT (
+	            attend_no,
+	            course_no,
+	            stu_no,
+	            attend_date,
+	            attend_state  ) 
+	        VALUES (
+	            'ATT'||LPAD(ATTEND_SEQ.NEXTVAL, 6,0)
+	            , (SELECT COURSE_NO FROM COURSE 
+	              WHERE LECT_NO = #{lectNo,jdbcType=VARCHAR} 
+	              AND STU_NO = #{stuNo,jdbcType=VARCHAR}
+	              AND COURSE_CDATE IS NULL)
+	            , #{stuNo,jdbcType=VARCHAR}
+	            , SYSDATE
+	            , #{attendState,jdbcType=VARCHAR}
+	        )
+	</update>
+<!--/////////////////////////////////////////////////////////////////////////////-->
+	
+<!--///////////////////////// 학생의 내수강별출석조회, 내수강명조회 ////////////////////////-->	
+	<select id="selectMyattendList" resultType="AttendanceVO" parameterType="AttendanceVO">
+		SELECT
+		    ATTEND_NO,
+		    COURSE_NO,
+		    STU_NO,
+		    ATTEND_DATE,
+		    ATTEND_STATE
+		FROM ATTENDANCE 
+		WHERE COURSE_NO = ( 
+                SELECT COURSE_NO 
+                FROM COURSE 
+                WHERE LECT_NO = #{lectNo}
+                AND STU_NO = #{stuNo}  
+                AND COURSE_CDATE IS NULL )
+		ORDER BY ATTEND_DATE
+	</select>
+	
+	<select id="selectMylectname" resultType="string" parameterType="string">
+		SELECT LECT_NAME
+		FROM LECTURE
+		WHERE LECT_NO = #{lectNo}
+	</select>
+<!--/////////////////////////////////////////////////////////////////////////////-->
+	
+	
+<!--////////////////////////////// 학생의 출석인정 신청 ///////////////////////////////-->
+	<select id="selectMyattend" resultType="AttendanceVO" parameterType="string">
+		SELECT 
+			ATTEND_NO,
+		    COURSE_NO,
+		    STU_NO,
+		    ATTEND_DATE,
+		    ATTEND_STATE 
+		FROM ATTENDANCE 
+		WHERE ATTEND_NO = #{attendNo}
+	</select>
+	<insert id="insertMyattendAdmit" parameterType="AttendanceAdmitVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="aaNo">
+			SELECT 'AA'||LPAD(AA_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ATTENDANCE_ADMIT
+		    (
+		        AA_NO
+		        , ATTEND_NO
+		        , COURSE_NO 
+		        , STU_NO
+		        , AA_REASON
+		        , AA_STATE
+		        , AA_FILE
+		    )
+		VALUES
+		    (
+		        #{aaNo,jdbcType=VARCHAR}
+		        , #{attendNo,jdbcType=VARCHAR}
+		        , #{attend.courseNo,jdbcType=VARCHAR}
+		        , #{attend.stuNo,jdbcType=VARCHAR}
+		        , #{aaReason,jdbcType=VARCHAR}
+		        , 'B001' 
+		        , #{aaFile,jdbcType=NUMERIC}
+		    )
+	</insert>
+	<select id="selectLectNo" resultType="string" parameterType="string">
+		SELECT LECT_NO
+		FROM COURSE
+		WHERE COURSE_NO = #{courseNo}
+	</select>
+	
+<!--/////////////////////////////////////////////////////////////////////////////-->
+
+
+<!--////////////////////////////// 학생, 교수의 출석인정 신청 조회 //////////////////////////-->
+	<select id="selectAttendAdmitList" resultMap="attendAdmit" parameterType="AttendanceAdmitVO">
+		WITH COURSEONE AS (
+		    SELECT COURSE_NO 
+		    FROM COURSE 
+		    WHERE LECT_NO = #{lectNo} AND STU_NO=#{stuNo}
+		    )
+		SELECT 
+			 AA.AA_NO, AA.ATTEND_NO, AA.COURSE_NO, AA.STU_NO, AA.AA_REASON, AA.AA_STATE, NVL(AA.AA_FILE,0) AS AA_FILE
+  			 , A.ATTEND_DATE, A.ATTEND_STATE, AA_REFUSE
+		FROM ATTENDANCE_ADMIT AA INNER JOIN ATTENDANCE A ON(A.ATTEND_NO = AA.ATTEND_NO)
+								INNER JOIN COURSEONE C ON (AA.COURSE_NO = C.COURSE_NO)
+		ORDER BY AA.AA_NO DESC
+	</select>
+	
+	<select id="selectAttendAdmitListAll" resultMap="attendAdmit" parameterType="string">
+		WITH COURSEALL AS (
+		    SELECT COURSE_NO 
+		    FROM COURSE 
+		    WHERE LECT_NO = #{lectNo}
+		    AND COURSE_CDATE IS NULL
+		    )
+		SELECT 
+			 AA.AA_NO, AA.ATTEND_NO, AA.COURSE_NO, AA.STU_NO, AA.AA_REASON, AA.AA_STATE, NVL(AA.AA_FILE,0) AS AA_FILE
+  			 , A.ATTEND_DATE, A.ATTEND_STATE
+  			 , M.MEM_NAME, M.DEPT_NAME, M.COL_NAME 
+		FROM ATTENDANCE_ADMIT AA INNER JOIN ATTENDANCE A ON(A.ATTEND_NO = AA.ATTEND_NO)
+								INNER JOIN COURSEALL C ON (AA.COURSE_NO = C.COURSE_NO)
+						 	   INNER JOIN MEMBER_COURSE M ON (AA.STU_NO = M.MEM_NO)
+		WHERE AA_STATE = 'B001'
+		ORDER BY AA.AA_NO DESC
+	</select>
+<!--/////////////////////////////////////////////////////////////////////////////-->
+</mapper>

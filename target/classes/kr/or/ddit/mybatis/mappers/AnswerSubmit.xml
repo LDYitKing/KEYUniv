@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.exam.dao.ExamDAO">
+	<insert id="insertStuExamAnswerSubmit" parameterType="AnswerSubmitVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="asNo">
+			SELECT 'AS'||LPAD(ANSWER_SUB_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ANSWER_SUBMIT(
+				AS_NO
+				,ET_NO
+				,EQ_NO
+				,STU_NO
+				,AS_ANSWER
+				,EXAM_NO
+		)VALUES(
+			 #{asNo,jdbcType=VARCHAR}
+			, #{etNo,jdbcType=VARCHAR}
+			, #{eqNo,jdbcType=VARCHAR}
+			, #{stuNo,jdbcType=VARCHAR}
+			, #{asAnswer,jdbcType=VARCHAR}					
+			, #{examNo,jdbcType=VARCHAR}					
+		)
+	</insert>
+</mapper>

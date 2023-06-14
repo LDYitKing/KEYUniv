@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.student.dao.StudentDAO">
+
+   <sql id="searchFrag">
+   <trim prefix="WHERE" prefixOverrides="AND">
+	      <if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+	      	<choose>
+	      		<when test="simpleCondition.searchType eq 'name'">
+	      			AND INSTR(MEM_NAME, #{simpleCondition.searchWord}) > 0
+	      		</when>
+	      		<when test="simpleCondition.searchType eq 'no'">
+	      			AND INSTR(MEM_NO, #{simpleCondition.searchWord}) > 0
+	      		</when>
+	      		<otherwise>
+	      			AND(
+		      			INSTR(MEM_NAME, #{simpleCondition.searchWord}) > 0
+		      			OR
+		      			INSTR(MEM_NO, #{simpleCondition.searchWord}) > 0
+	      			)
+	      		</otherwise>
+	      	</choose>
+	      </if>
+	      <if test="detailCondition neq null">
+	      	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.deptNo)">
+        		AND DEPT_NO = #{detailCondition.deptNo}
+        	</if>
+	      	<if test="detailCondition.stuYear != null">
+        		AND STU_YEAR = #{detailCondition.stuYear}
+        	</if>
+	      	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.memGender)">
+        		AND MEM_GENDER = #{detailCondition.memGender}
+        	</if>
+	      	<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(detailCondition.stuState)">
+        		AND STU_STATE = #{detailCondition.stuState}
+        	</if>
+	      </if>
+	</trim>
+   </sql>
+   
+   <select id="selectTotalRecord" resultType="int" parameterType="Pagination">
+      SELECT COUNT(*)
+		FROM STUDENT_VIEW
+      <include refid="searchFrag" />
+   </select>
+
+   <select id="selectStudentList" resultType="StudentVO" parameterType="Pagination">
+      SELECT B.*
+      FROM(
+         SELECT ROWNUM RNUM, A.*
+         FROM(
+				SELECT
+				    MEM_NO
+				    , MEM_NAME
+				    , DECODE(MEM_GENDER, 'M', '남', 'W', '여') MEM_GENDER
+				    , MEM_RRNO1
+				    , MEM_RRNO2
+				    , MEM_TEL
+				    , MEM_ZIP
+				    , MEM_ADD1
+				    , MEM_ADD2
+				    , MEM_EMAIL
+				    , MEM_ROLE
+				    , MEM_PHOTO
+				    , ATCH_ORGIN_NAME
+				    , ATCH_SAVE_NAME
+				    , COL_NO
+				    , COL_NAME
+				    , DEPT_NO
+				    , DR_NO
+				    , DEPT_NAME
+				    , DEPT_TUITION
+				    , STU_NO
+				    , STU_STATE
+				    , COMM_NAME
+				    , STU_EDATE
+				    , STU_GDATE
+				    , STU_EMPLOY
+				    , STU_YEAR
+				FROM
+				    STUDENT_VIEW
+               <include refid="searchFrag" />
+             
+             ORDER BY MEM_NO
+          ) A  
+       ) B      
+       WHERE RNUM BETWEEN #{startRow} AND #{endRow}
+   </select>
+   
+   <insert id="insertStudent" parameterType="StudentVO">
+   		INSERT INTO STUDENT(
+   			STU_NO
+			,DEPT_NO
+			,COL_NO
+			,DR_NO
+			,STU_STATE
+			,STU_EDATE
+			,STU_GDATE
+			,STU_EMPLOY
+			,STU_YEAR
+   		)VALUES(
+   			#{memNo,jdbcType=VARCHAR}
+			, #{deptNo,jdbcType=VARCHAR}
+			, #{colNo,jdbcType=VARCHAR}
+			, #{drNo,jdbcType=VARCHAR}
+			, 'C001'
+			, TO_DATE(#{ayYear} || '0302','YYYYMMDDHH24')
+			, #{stuGdate,jdbcType=DATE}
+			, 'H002'
+			, #{stuYear,jdbcType=NUMERIC}
+   		)
+   		
+   </insert>
+   
+   <select id="selectStudentNoForDept" parameterType="map" resultType="String">
+  		SELECT TO_CHAR( NVL(MAX(STU_NO),(SUBSTR(#{ayYear,jdbcType=VARCHAR},-2)||#{deptNo,jdbcType=VARCHAR})||'000')+1 )
+		FROM STUDENT
+		WHERE SUBSTR(STU_NO,1,6)=(SUBSTR(#{ayYear,jdbcType=VARCHAR},-2)||#{deptNo,jdbcType=VARCHAR})   
+   </select>
+   
+   <select id="selectStudentForAuth" parameterType="StudentVO" resultType="StudentVO">
+		SELECT
+		    MEM_NO
+		    , MEM_NAME
+		    , DECODE(MEM_GENDER, 'M', '남', 'W', '여') MEM_GENDER
+		    , MEM_RRNO1
+		    , MEM_RRNO2
+		    , MEM_TEL
+		    , MEM_ZIP
+		    , MEM_ADD1
+		    , MEM_ADD2
+		    , MEM_EMAIL
+		    , MEM_ROLE
+		    , MEM_PHOTO
+		    , ATCH_ORGIN_NAME
+		    , ATCH_SAVE_NAME
+		    , COL_NO
+		    , COL_NAME
+		    , DEPT_NO
+		    , DR_NO
+		    , DEPT_NAME
+		    , DEPT_TUITION
+		    , STU_NO
+		    , STU_STATE
+		    , COMM_NAME
+		    , STU_EDATE
+		    , STU_GDATE
+		    , STU_EMPLOY
+		    , STU_YEAR
+		FROM
+		    STUDENT_VIEW
+   		WHERE STU_NO = #{memNo}
+   </select>
+   
+   <select id="selectStudentPackList" resultMap="studentMap">
+		SELECT 	
+			MEM_NO
+			, MEM_NAME
+			, DEPT_NO
+			, STU_NO
+			, COL_NO
+			, MEM_EMAIL
+			, MEM_TEL
+		FROM MEMBER_COURSE 
+	</select>
+
+<resultMap type="StudentVO" id="studentMap" autoMapping="true">
+	<id property="stuNo" column="STU_NO"/>
+
+<!-- 헤즈 어 관계 -->
+	<association property="member" javaType="memberVO" autoMapping="true">
+<!-- 하나의 그룹이다라는 걸 알기위해 atchId 이퀄 설정 확인  -->
+		<id property="memNo" column="MEM_NO"/>
+	</association>
+	</resultMap>
+	
+</mapper>
+

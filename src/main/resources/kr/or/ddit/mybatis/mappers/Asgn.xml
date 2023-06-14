@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.asgn.dao.AsgnDAO">
+	<sql id="searchFrag">
+		<where>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'memName'">
+						INSTR(MEM_NAME, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(MEM_NAME, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 검색조건은 학생명으로 한다 -->
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM ASGN
+		<include refid="searchFrag" />
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+
+	
+	<resultMap type="AsgnVO" id="asgnMap" autoMapping="true">
+		<id property="asgnNo" column="ASGN_NO" />
+		<association property="atchFileGroup" javaType="AttatchFileGroupVO" >
+			<id column="ATCH_ID" property="atchId"/>
+			<collection property="atchfileList" ofType="AttatchFileVO" autoMapping="true" />
+		</association>
+	</resultMap>
+	
+	<resultMap type="AsgnSubmitVO" id="asMap" autoMapping="true">
+		<id property="asNo" column="AS_NO" />
+		<association property="atchFileGroup" javaType="AttatchFileGroupVO" >
+			<id column="ATCH_ID" property="atchId"/>
+			<collection property="atchfileList" ofType="AttatchFileVO" autoMapping="true" />
+		</association>
+	</resultMap>
+	
+	<select id="selectAsgnList" resultType="AsgnVO" parameterType="map">
+		SELECT 
+		    ASGN_NO
+		    , LECT_NO
+		    , ASGN_NAME
+		    , ASGN_CONTENT
+		    , ASGN_RDATE
+		    , ASGN_DDATE
+		    , ASGN_FILE
+		    , (
+		    	SELECT COUNT(*)
+		    	FROM ASGN_SUBMIT B
+				WHERE A.ASGN_NO = B.ASGN_NO
+				AND STU_NO = #{stuNo}
+		    ) ASGN_SUB
+		FROM ASGN A
+		WHERE LECT_NO = #{lectNo}
+		ORDER BY 1
+	</select>
+	
+	<select id="selectAsgn" resultMap="asgnMap" parameterType="string">
+		SELECT 
+		    ASGN_NO
+		    , LECT_NO
+		    , ASGN_NAME
+		    , ASGN_CONTENT
+		    , ASGN_RDATE
+		    , ASGN_DDATE
+		    , ASGN_FILE
+		    , ATCH_FILE.*
+		FROM ASGN LEFT OUTER JOIN ATCH_FILE ON (ASGN_FILE = ATCH_ID)
+		WHERE ASGN_NO = #{asgnNo}
+	</select>
+	
+	<select id="selectAsgnSubmit" resultMap="asMap" parameterType="AsgnSubmitVO">
+		SELECT
+			AS_NO
+		    , ASGN_NO
+		    , COURSE_NO
+		    , STU_NO
+		    , AS_SDATE
+		    , AS_CONTENT
+		    , AS_SCORE
+		    , AS_FILE
+		    , ATCH_FILE.*
+		FROM ASGN_SUBMIT  LEFT OUTER JOIN ATCH_FILE ON (AS_FILE = ATCH_ID)
+		WHERE ASGN_NO = #{asgnNo}
+		AND STU_NO = #{stuNo}
+	</select>
+	
+	<select id="selectASonAsNo" resultMap="asMap" parameterType="string">
+		SELECT
+			AS_NO
+		    , ASGN_NO
+		    , COURSE_NO
+		    , STU_NO
+		    , AS_SDATE
+		    , AS_CONTENT
+		    , AS_SCORE
+		    , AS_FILE
+		    , ATCH_FILE.*
+		FROM ASGN_SUBMIT  LEFT OUTER JOIN ATCH_FILE ON (AS_FILE = ATCH_ID)
+		WHERE AS_NO = #{asNo}
+	</select>
+	
+	<insert id="insertAsgnSubmit" parameterType="AsgnSubmitVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="asNo">
+			SELECT 'AS'||LPAD(AS_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO ASGN_SUBMIT
+	    (
+	        AS_NO
+	        , ASGN_NO
+	        , COURSE_NO
+	        , STU_NO
+	        , AS_SDATE
+	        , AS_CONTENT
+	        , AS_SCORE
+	        , AS_FILE
+	    )
+		VALUES
+	    (
+	        #{asNo,jdbcType=VARCHAR}
+	        , #{asgnNo,jdbcType=VARCHAR}	
+	        , (SELECT COURSE_NO 
+	        	FROM COURSE 
+	        	WHERE LECT_NO = #{courseNo} 
+	        	AND STU_NO=${stuNo}
+	        	AND COURSE_CDATE IS NULL)
+	        , #{stuNo,jdbcType=VARCHAR}
+	        , SYSDATE
+	        , #{asContent,jdbcType=VARCHAR}
+	        , 0
+	        , #{asFile,jdbcType=NUMERIC}
+	    )
+	</insert>
+	
+	<delete id="deleteAsngSubmit" parameterType="string">
+		DELETE FROM ASGN_SUBMIT
+		WHERE AS_NO = #{asNo}
+	</delete>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->	
+<!-- 교수과제 등록  -->
+	<insert id="insertProAsgn" parameterType="AsgnVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="asgnNo">
+			SELECT 'ASG'||LPAD(ASGN_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+			INSERT INTO ASGN
+			(
+				ASGN_NO
+				,LECT_NO
+				,ASGN_NAME
+				,ASGN_CONTENT
+				,ASGN_RDATE
+				,ASGN_DDATE
+				,ASGN_FILE
+			)
+			VALUES
+			(
+			  #{asgnNo,jdbcType=VARCHAR}
+	        , (SELECT LECT_NO FROM LECTURE WHERE LECT_NO = #{lectNo})
+	        , #{asgnName,jdbcType=VARCHAR}
+	        , #{asgnContent,jdbcType=VARCHAR}
+	        , SYSDATE
+	        , #{asgnDdate,jdbcType=DATE}
+	        , #{asgnFile,jdbcType=NUMERIC}
+			)
+	</insert>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 교수 강의별 과제 조회 -->
+	<select id="selectProAsgnList" resultType="AsgnVO" parameterType="String">
+		SELECT 
+		   ASGN_NO
+		    ,A.LECT_NO
+		    ,ASGN_NAME
+		    ,ASGN_CONTENT
+		    ,ASGN_RDATE
+		    ,ASGN_DDATE
+		    ,ASGN_FILE
+		    
+		    ,ATCH_ID
+			,ATCH_SEQ
+			,ATCH_MIME
+			,ATCH_ORGIN_NAME
+			,ATCH_SAVE_NAME
+			,ATCH_SIZE
+			,ATCH_DATE
+			
+			,L.LECT_NO
+			,LECT_NAME
+   		FROM ASGN A
+		LEFT OUTER JOIN ATCH_FILE B ON A.ASGN_FILE = B.ATCH_ID
+		LEFT OUTER JOIN LECTURE L ON A.LECT_NO = L.LECT_NO
+		WHERE A.LECT_NO = #{lectNo}
+		ORDER BY 1
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 교수 강의별 과제 조회 -->
+	<select id="selectProStuAsgnList" resultType="AsgnVO" parameterType="Pagination">
+		WITH COURSELIST AS (
+			    SELECT COURSE_NO 
+			    FROM COURSE 
+			    WHERE LECT_NO = #{detailCondition.lectNo}
+			)
+			SELECT DISTINCT A.MEM_NAME, B.ASGN_NO, A.LECT_NO, B.ASGN_NAME
+			       , C.AS_CONTENT, C.AS_SDATE, C.AS_NO, C.AS_SCORE
+			FROM MEMBER_COURSE A 
+			LEFT OUTER JOIN ASGN B ON (B.LECT_NO = A.LECT_NO)
+			LEFT OUTER JOIN (SELECT AS_CONTENT, AS_SDATE, ASGN_NO, STU_NO, AS_NO, AS_SCORE
+			                 FROM ASGN_SUBMIT) C ON (C.ASGN_NO = B.ASGN_NO AND C.STU_NO = A.MEM_NO)
+			WHERE COURSE_NO IN (SELECT COURSE_NO FROM COURSELIST)
+			AND B.ASGN_NO = #{detailCondition.asgnNo}
+			AND COURSE_CDATE IS NULL
+			ORDER BY 1
+			<include refid="searchFrag" />
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 과제 상세 조회 -->
+	<select id="selectAsgnSubmitInfo" parameterType="String" resultMap="asMap">
+		SELECT
+			AS_NO
+			,A.ASGN_NO 
+			,COURSE_NO
+			,A.STU_NO
+			,AS_SDATE
+			,AS_CONTENT
+			,AS_SCORE
+			,AS_FILE
+			,ATCH_ID
+			,ATCH_SEQ
+			,ATCH_MIME
+			,ATCH_ORGIN_NAME
+			,ATCH_SAVE_NAME
+			,ATCH_SIZE
+			,ATCH_DATE
+			,B.ASGN_NO
+			,LECT_NO
+			,ASGN_NAME
+			,ASGN_CONTENT
+			,ASGN_RDATE
+			,ASGN_DDATE
+			,ASGN_FILE
+			,M.MEM_NAME
+		FROM ASGN_SUBMIT A 
+			LEFT OUTER JOIN ATCH_FILE ON (AS_FILE = ATCH_ID)
+		 	LEFT OUTER JOIN ASGN B ON (B.ASGN_NO = A.ASGN_NO)
+		 	LEFT OUTER JOIN MEMBER M ON (M.MEM_NO = A.STU_NO)
+		WHERE AS_NO = #{asNo }
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 점수 업데이트 -->
+	<update id="updateScore" parameterType="AsgnSubmitVO">
+		UPDATE ASGN_SUBMIT
+		SET
+			AS_SCORE = #{asScore, jdbcType=NUMERIC}
+		WHERE AS_NO = #{asNo}	
+	</update>
+
+
+
+
+
+
+
+
+
+
+</mapper>

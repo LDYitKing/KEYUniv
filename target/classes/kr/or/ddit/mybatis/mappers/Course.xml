@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.course.dao.CourseDAO">
+
+	<resultMap type="CourseVO" id="courseListMap" autoMapping="true">
+		<id property="courseNo" column="COURSE_NO"/>
+		<association property="lecture" javaType="LectureVO" autoMapping="true">
+			<id property="lectNo" column="LECT_NO"/>
+			<collection property="lectDetailList" ofType="LectureTimePlaceVO" autoMapping="true" />
+		</association>
+	</resultMap>
+	<select id="selectCourseList" resultMap="courseListMap" parameterType="CourseVO">
+		SELECT 
+		    C.COURSE_NO
+		    ,C.STU_NO
+		    ,C.LECT_NO
+		    ,C.COURSE_ADATE
+		    ,C.COURSE_CDATE
+		    ,C.COURSE_STATE
+		    
+		    ,LV.LECT_NO
+		    ,LV.SUB_NO
+		    ,LV.PRO_NO
+		    ,LV.LECT_NAME
+		    ,LV.LECT_EXP
+		    ,LV.LECT_MM
+		    ,LV.LECT_PM
+		    ,LV.LECT_ONF
+		    ,LV.LECT_ONF_NAME
+		    ,LV.LECT_STATE
+		    ,LV.LECT_STATE_NAME
+		    ,LV.AY_YEAR
+		    ,LV.AY_SEMESTER
+		    ,LV.MEM_NAME
+		    ,LV.DEPT_NO
+		    ,LV.COL_NO
+		    ,LV.SUB_NAME
+		    ,LV.SUB_EXP
+		    ,LV.SUB_GRADE
+		    ,LV.SUB_HOURS
+		    ,LV.SUB_SCR
+		    ,LV.SUB_STATE
+		    ,LV.SUB_REASON
+		    ,LV.SUB_COMM
+		    ,LV.SUB_COMM_NAME
+		    ,LV.COL_NAME
+		    ,LV.DEPT_NAME
+		    ,LV.LT_NO
+		    ,LV.LTD_NO
+		    ,LV.LTD_DAY
+		    ,LV.LTD_PERIOD
+		    ,LV.LR_NO    
+			,LV.LR_NUM
+			,LV.BUIL_NO
+			,LV.BUIL_NAME	
+				    
+		FROM COURSE C INNER JOIN LECTURE_VIEW LV
+		    ON(C.LECT_NO = LV.LECT_NO)
+		WHERE AY_YEAR = #{ayYear} AND AY_SEMESTER = #{aySemester}
+		    AND STU_NO = #{stuNo}
+		    AND COURSE_CDATE IS NULL	
+		    <if test="courseState neq null">
+		    AND COURSE_STATE = #{courseState}			
+		    </if>
+		ORDER BY COURSE_ADATE DESC, LTD_NO ASC
+	</select>
+	
+	<update id="deleteCourse" parameterType="string">
+		UPDATE COURSE 
+			SET COURSE_CDATE = SYSTIMESTAMP
+		WHERE COURSE_NO = #{courseNo}
+	</update>
+	
+	<insert id="insertCourse" parameterType="CourseVO">
+		<selectKey order="BEFORE" resultType="string" keyProperty="courseNo">
+			SELECT COURSE_SEQ.NEXTVAL
+			FROM DUAL
+		</selectKey>
+		INSERT INTO COURSE
+			(
+				COURSE_NO
+				,STU_NO
+				,LECT_NO
+				,COURSE_ADATE
+				,COURSE_STATE
+			)
+			VALUES
+			(
+				#{courseNo,jdbcType=VARCHAR}
+				, #{stuNo,jdbcType=VARCHAR}
+				, #{lectNo,jdbcType=VARCHAR}
+				, SYSTIMESTAMP
+				, 'I001'				
+			)
+	</insert>
+	
+	<select id="countScr" parameterType="string" resultType="int">
+		SELECT NVL(SUM(S.SUB_SCR),0)
+		FROM 
+		    COURSE C LEFT OUTER JOIN LECTURE L
+		        ON(C.LECT_NO = L.LECT_NO)
+		    LEFT OUTER JOIN SUBJECT S
+		        ON(L.SUB_NO = S.SUB_NO)
+		    
+		WHERE C.STU_NO = #{memNo}
+		    AND C.COURSE_CDATE IS NULL
+		    AND COURSE_STATE = 'I001'	
+		    AND L.AY_YEAR = '2023' AND L.AY_SEMESTER= '1'
+	</select>
+</mapper>

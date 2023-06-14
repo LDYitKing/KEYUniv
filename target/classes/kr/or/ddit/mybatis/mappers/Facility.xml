@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.facility.dao.FacilityDAO">
+	<sql id="searchFrag">
+		<where>
+			<if test="simpleCondition neq null and @org.apache.commons.lang3.StringUtils@isNotBlank(simpleCondition.searchWord)">
+				<choose>
+					<when test="simpleCondition.searchType eq 'faciName'">
+						INSTR(FACI_NAME, #{simpleCondition.searchWord}) > 0
+					</when>
+					<otherwise>
+						INSTR(FACI_NAME, #{simpleCondition.searchWord}) > 0
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</sql>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	 -->
+<!-- 	검색조건은 시설명으로 한다 -->
+	<select id="selectTotalRecord" resultType="int">
+		SELECT COUNT(*)
+		FROM FACILITY
+		<include refid="searchFrag" />
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	 -->
+<!-- 편의시설 리스트 가져오기(페이징 o) -->
+	<select id="selectFacilityList" parameterType="Pagination" resultType="FacilityVO">
+		SELECT B.*
+		FROM (
+			SELECT ROWNUM RNUM, A.*
+			FROM (
+				SELECT
+					 FACI_NO
+					,FACI_NAME
+					,FACI_CAUTION
+					, (
+						SELECT COUNT(*)
+						FROM ATCH_FILE
+						WHERE FACI_FILE = ATCH_ID
+					)ATCH_COUNT
+				FROM FACILITY
+				<include refid="searchFrag" />
+				ORDER BY FACI_NO DESC
+			) A
+		) B
+		<![CDATA[
+			WHERE RNUM >= #{startRow} AND RNUM <= #{endRow}
+		]]>
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 편의시설 등록 -->
+	<insert id="insertFacility" parameterType="FacilityVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="faciNo">
+			SELECT 'FACI'||LPAD(FACILITY_SEQ.NEXTVAL,2,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO FACILITY
+		(
+			FACI_NO
+			,FACI_NAME
+			,FACI_CAUTION
+			,FACI_FILE
+		)
+		VALUES(
+			#{faciNo,jdbcType=VARCHAR}
+			,#{faciName,jdbcType=VARCHAR}
+			,#{faciCaution,jdbcType=VARCHAR}
+			,#{faciFile,jdbcType=NUMERIC}
+		)
+	</insert>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<resultMap type="FacilityVO" id="facilityMap" autoMapping="true">
+		<id property="faciNo" column="FACI_NO"/>
+		<association property="atchFileGroup" javaType="AttatchFileGroupVO">
+			<id property="atchId" column="ATCH_ID"/>
+			<collection property="atchfileList" ofType="AttatchFileVO" autoMapping="true" />
+		</association>
+	</resultMap>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<select id="selectFacility" parameterType="String" resultMap="facilityMap">
+<!-- 편의시설 상세보기 -->
+		SELECT
+			FACI_NO
+			,FACI_NAME
+			,FACI_CAUTION
+			,FACI_FILE
+			, ATCH_ID, ATCH_SEQ, ATCH_MIME
+			, ATCH_ORGIN_NAME, ATCH_SAVE_NAME, ATCH_SIZE
+			, ATCH_DATE
+		FROM FACILITY LEFT OUTER JOIN ATCH_FILE ON (FACI_FILE = ATCH_ID)
+		WHERE FACI_NO = #{faciNo}
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+	<update id="updateFacility" parameterType="FacilityVO">
+<!-- 편의시설 수정  -->
+		UPDATE FACILITY
+		SET
+			FACI_NAME = #{faciName,jdbcType=VARCHAR}
+			, FACI_CAUTION = #{faciCaution,jdbcType=VARCHAR}
+			, FACI_FILE = #{faciFile,jdbcType=NUMERIC}
+		WHERE FACI_NO = #{faciNo}
+	</update>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 편의시설 삭제 -->
+	<delete id="deleteFacility" parameterType="FacilityVO">
+		DELETE FROM FACILITY
+		WHERE FACI_NO = #{faciNo}
+	</delete>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 편의시설 예약시간 조회 -->
+	<select id="selectFacilityTimeList" resultType="FacilityTimeVO">
+		SELECT
+			FT_NO
+			, FT_DAY
+			, FT_PERIOD
+		FROM FACILITY_TIME
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 편의시설 리스트 가져오기(페이징x) -->
+	<select id="selectFaciList" resultType="FacilityVO">
+		SELECT *
+		  FROM FACILITY
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 편의시설 에약하기(insert) -->
+	<insert id="insertFacilityRes" parameterType="FacilityResVO">
+    <selectKey order="BEFORE" resultType="int" keyProperty="No">
+        SELECT FACI_RES_SEQ.NEXTVAL
+        FROM DUAL
+    </selectKey>
+    INSERT ALL
+    <foreach collection="ftNoList" item="ft" index="idx">
+        INTO FACILITY_RES (
+             FR_NO
+            , FACI_NO
+            , MEM_NO
+            , FT_NO
+            , FR_DATE
+            , FR_NOP
+            , FR_PURPOSE
+            , FR_STATE
+        )
+        VALUES (
+            'FR'||LPAD(#{No},3,0)||LPAD(#{idx},2,0),
+            #{faciNo,jdbcType=VARCHAR},
+            #{memNo,jdbcType=VARCHAR},
+            #{ft,jdbcType=VARCHAR},
+            SYSDATE,
+            #{frNop,jdbcType=NUMERIC},
+            #{frPurpose,jdbcType=VARCHAR},
+            'B002'
+        )
+    </foreach>
+    SELECT * FROM DUAL
+	</insert>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 개인별 편의시설 에약 현황 조회 -->
+	<select id="selectFacilityResList" parameterType="String" resultType="FacilityResVO">
+		SELECT
+	          FR_NO
+	        , A.FACI_NO
+	        , MEM_NO
+	        , FT_NO
+	        , FR_DATE
+	        , FR_NOP
+	        , FR_PURPOSE
+	        , FR_STATE
+	        , COMM_NO
+	        , COMM_NAME
+	        , F.FACI_NO
+	        , FACI_NAME
+	    FROM FACILITY_RES A
+	    LEFT OUTER JOIN COMM B ON A.FR_STATE = B.COMM_NO
+	    LEFT OUTER JOIN FACILITY F ON A.FACI_NO = F.FACI_NO
+	    WHERE MEM_NO = #{memNo}
+	    ORDER BY 1
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	 -->
+	<!-- 개인별 편의시설 예약 삭제 -->
+	<delete id="deleteFacilityRes" parameterType="FacilityResVO">
+		DELETE FROM FACILITY_RES
+		WHERE FR_NO = #{frNo}
+	</delete>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~	 -->
+	<select id="selectTotalFacilityResList" parameterType="FacilityResVO">
+		SELECT * FROM FACILITY_RES
+	</select>
+
+
+</mapper>

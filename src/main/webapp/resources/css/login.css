@@ -1,0 +1,56 @@
+@charset "UTF-8";
+
+#loginDiv{
+    display: grid; 
+    grid-template-columns: 1.7fr 1fr;
+    width: 60%;
+    min-width: 500px;
+}
+#loginImgDiv{
+    background-image: url('../img/loginMain1.png'); 
+    background-repeat: no-repeat; 
+    background-size: cover;
+    opacity: 0.8;
+}
+.loginBackImgDiv{
+	
+    background-image: url('../img/loginMain2.png'); 
+    background-repeat: no-repeat; 
+    background-size: cover;
+}
+.loginFont{
+    color: white;
+    font-style: italic;
+    font-weight: bold;
+    text-align: center;
+    text-shadow: 3px 3px 6px rgb(25, 33, 44);
+}
+.loginFontTitle{
+    font-size: 60px;
+}
+/* .loginFont::selection{
+    background: ;
+} */
+   
+   #searchTable{
+
+   }
+   #searchIdTableArea{
+      
+   }
+
+table {
+       width: 100%;
+       border: 1px solid #444444;
+       border-collapse: collapse;
+   }
+   th, tr, td {
+/*        border: 1px solid #444444; */
+       padding: 3px;
+   }
+   
+   #searchIdInfoDiv span, .searchPasswdInfoDiv1 span{
+      color: red;
+      text-align: center;
+   }
+

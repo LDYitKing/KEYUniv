@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.subject.dao.SubjectDAO">
+
+	<sql id="searchFrag">
+	FROM
+	    SUBJECT A INNER JOIN DEPARTMENT B ON (A.DEPT_NO = B.DEPT_NO)
+	    INNER JOIN COLLEAGE C ON (B.COL_NO = C.COL_NO)
+	    INNER JOIN COMM D ON (A.SUB_COMM = D.COMM_NO)
+	    INNER JOIN COMM E ON (A.SUB_STATE = E.COMM_NO)
+	</sql>
+
+<select id="selectSubjectList" resultType="SubjectVO">
+	SELECT G.*
+	FROM (
+		SELECT ROWNUM RNUM, F.*
+		FROM (
+			SELECT
+			    SUB_NO,
+			    A.DEPT_NO,
+			    A.COL_NO,
+			    SUB_NAME,
+			    SUB_EXP,
+			    SUB_GRADE,
+			    SUB_HOURS,
+			    SUB_SCR,
+			    SUB_COMM,
+			    SUB_STATE,
+			    SUB_REASON,
+			    DEPT_NAME,
+			    COL_NAME,
+			    D.COMM_NAME "SUBCOMMNAME",
+			    E.COMM_NAME "SUBSTATENAME"
+			    <include refid="searchFrag" />
+				) F
+			) G
+</select>
+
+<select id="selectSubject" parameterType="string" resultType="SubjectVO">
+	SELECT G.*
+	FROM (
+		SELECT ROWNUM RNUM, F.*
+		FROM (
+			SELECT
+			    SUB_NO,
+			    A.DEPT_NO,
+			    A.COL_NO,
+			    SUB_NAME,
+			    SUB_EXP,
+			    SUB_GRADE,
+			    SUB_HOURS,
+			    SUB_SCR,
+			    SUB_COMM,
+			    SUB_STATE,
+			    SUB_REASON,
+			    DEPT_NAME,
+			    COL_NAME,
+			    D.COMM_NAME "SUBCOMMNAME",
+			    E.COMM_NAME "SUBSTATENAME"
+			 FROM
+			    SUBJECT A INNER JOIN DEPARTMENT B ON (A.dept_no = B.dept_no)
+			    INNER JOIN COLLEAGE C ON (B.COL_NO = C.COL_NO)
+			    INNER JOIN COMM D ON (A.SUB_COMM = D.COMM_NO)
+			    INNER JOIN COMM E ON (A.SUB_STATE = E.COMM_NO)
+				) F
+			) G
+	WHERE SUB_NO = #{subNo}
+</select>
+
+<select id="temporaryProfessor" parameterType="string" resultType="ProfessorVO">
+	SELECT
+	    PRO_NO,
+	    DEPT_NO,
+	    COL_NO,
+	    PRO_POS,
+	    PRO_LOE,
+	    PRO_CAREER,
+	    PRO_EDATE,
+	    PRO_RDATE
+	FROM
+	    PROFESSOR
+	WHERE
+	    PRO_NO = #{proNo}
+</select>
+
+<insert id="insertSubject" parameterType="SubjectVO">
+<selectKey order="BEFORE" resultType="String" keyProperty="subNo">
+	SELECT 'S' || #{deptNo} || LPAD(NVL(TO_NUMBER(SUBSTR(MAX(SUB_NO), LENGTH(#{deptNo})+2)), '0') +1, 3, '0') 
+	FROM SUBJECT
+	WHERE DEPT_NO = #{deptNo}
+</selectKey>
+	INSERT INTO SUBJECT (
+	    SUB_NO,
+	    DEPT_NO,
+	    COL_NO,
+	    SUB_NAME,
+	    SUB_EXP,
+	    SUB_GRADE,
+	    SUB_HOURS,
+	    SUB_SCR,
+	    SUB_COMM,
+	    SUB_STATE
+	) VALUES (
+	     #{subNo,jdbcType=VARCHAR}
+	    , #{deptNo,jdbcType=VARCHAR}
+	    , #{colNo,jdbcType=VARCHAR}
+	    , #{subName,jdbcType=VARCHAR}
+	    , #{subExp,jdbcType=VARCHAR}
+	    , #{subGrade,jdbcType=NUMERIC}
+	    , #{subHours,jdbcType=NUMERIC}
+	    , #{subScr,jdbcType=NUMERIC}
+	    , #{subComm,jdbcType=VARCHAR}
+	    , 'B001'
+	)
+</insert>
+
+<update id="subjectOKAll" >
+	UPDATE SUBJECT
+    SET
+        SUB_STATE = 'B002'
+	WHERE
+	   SUB_STATE = 'B001'
+</update>
+<update id="updateSubject" parameterType="SubjectVO">
+UPDATE SUBJECT
+SET
+	     SUB_NAME = #{subName,jdbcType=VARCHAR}
+		, SUB_EXP = #{subExp,jdbcType=VARCHAR}
+		, SUB_GRADE = #{subGrade,jdbcType=NUMERIC}
+		, SUB_HOURS = #{subHours,jdbcType=NUMERIC}
+		, SUB_SCR = #{subScr,jdbcType=NUMERIC}
+	    ,SUB_STATE = 'B001'
+WHERE
+    SUB_NO = #{subNo,jdbcType=VARCHAR}
+</update>
+<delete id="deleteSubject" parameterType="string">
+UPDATE SUBJECT
+SET
+	SUB_STATE = 'B004'
+WHERE
+	SUB_NO = #{subNo,jdbcType=VARCHAR}
+</delete>
+
+<update id="subjectProcess" parameterType="SubjectVO">
+UPDATE SUBJECT
+SET
+	 SUB_STATE = #{subState,jdbcType=VARCHAR}
+	, SUB_REASON = #{subReason,jdbcType=VARCHAR}
+WHERE
+	SUB_NO = #{subNo,jdbcType=VARCHAR}
+</update>
+
+	<resultMap type="SubjectVO" id="subListMap" autoMapping="true">
+		<id property="subNo" column="SUB_NO"/>
+		<collection property="lectList" ofType="LectureVO" autoMapping="true">
+			<id property="lectNo" column="LECT_NO"/>
+			<collection property="lectDetailList" ofType="LectureTimePlaceVO" autoMapping="true" />
+		</collection>
+	</resultMap>	
+	<select id="selectLectureWithFavorites" parameterType="string" resultMap="subListMap">
+		SELECT 
+			F.SUB_NO
+			, (SELECT SUB_NAME
+				FROM SUBJECT
+				WHERE SUB_NO = F.SUB_NO) SUB_NAME
+		
+		    ,LV.LECT_NO
+		    ,LV.SUB_NO
+		    ,LV.PRO_NO
+		    ,LV.LECT_NAME
+		    ,LV.LECT_EXP
+		    ,LV.LECT_MM
+		    ,LV.LECT_PM
+		    ,LV.LECT_ONF
+		    ,LV.LECT_ONF_NAME
+		    ,LV.LECT_STATE
+		    ,LV.LECT_STATE_NAME
+		    ,LV.AY_YEAR
+		    ,LV.AY_SEMESTER
+		    ,LV.MEM_NAME
+		    ,LV.DEPT_NO
+		    ,LV.COL_NO
+		    ,LV.SUB_NAME
+		    ,LV.SUB_EXP
+		    ,LV.SUB_GRADE
+		    ,LV.SUB_HOURS
+		    ,LV.SUB_SCR
+		    ,LV.SUB_STATE
+		    ,LV.SUB_REASON
+		    ,LV.SUB_COMM
+		    ,LV.SUB_COMM_NAME
+		    ,LV.COL_NAME
+		    ,LV.DEPT_NAME
+		    ,LV.LT_NO
+		    ,LV.LTD_NO
+		    ,LV.LTD_DAY
+		    ,LV.LTD_PERIOD
+		    ,LV.LR_NO    
+			,LV.LR_NUM
+			,LV.BUIL_NO
+			,LV.BUIL_NAME	
+		    
+		FROM FAVORITES F LEFT OUTER JOIN LECTURE_VIEW LV
+		    ON (F.SUB_NO = LV.SUB_NO)
+		WHERE F.MEM_NO = #{memNo}
+			AND LV.AY_YEAR='2023' AND LV.AY_SEMESTER = '1'		
+	</select>
+	
+	<select id="selectJobList" resultType="FavoriteVO">
+		SELECT G.*
+		FROM (
+				SELECT ROWNUM RNUM, F.*
+				FROM (
+		SELECT
+		    JS.JOB_NO,
+		    JS.SUB_NO,
+		    JOB_NAME,
+		    
+		    SUB_NAME,
+		    SUB_GRADE,
+		    SUB_SCR,
+		    S.SUB_COMM,
+		    COMM_NAME "SUBCOMMNAME"
+		FROM 
+		    JOB_SUBJECT JS INNER JOIN JOB J ON(JS.JOB_NO = J.JOB_NO)
+		    INNER JOIN SUBJECT S ON(JS.SUB_NO = S.SUB_NO)
+		    INNER JOIN COMM C ON(S.SUB_COMM = C.COMM_NO)
+		    	) F
+		     ) G
+	</select>
+	
+	<select id="myListenSub" resultType="FavoriteVO" parameterType="string">
+	SELECT
+	    STU_NO "memNo",
+	    L.SUB_NO   
+	FROM 
+	    COURSE C INNER JOIN LECTURE L ON (C.LECT_NO = L.LECT_NO)
+	WHERE 
+	    STU_NO = #{stuNo}
+	    AND COURSE_CDATE IS NULL
+	</select>
+</mapper>

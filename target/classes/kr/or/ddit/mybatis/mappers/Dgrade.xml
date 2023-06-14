@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.dgrade.dao.DgradeDAO">
+	<insert id="insertStuDgrade" parameterType="DgradeVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="drNo">
+			SELECT 'STU' || #{memNo, jdbcType=VARCHAR}
+			FROM DUAL
+		</selectKey>
+		INSERT INTO DGRADE_REQ(
+		    DR_NO
+		    , DR_GRADES
+		    , DR_MC
+		    , DR_LAC
+		    , DR_FCC
+	    )VALUES(
+		    #{drNo}
+		    , (SELECT DR_GRADES
+		        FROM DGRADE_REQ
+		        WHERE DR_NO = 'DR'|| #{deptNo, jdbcType=VARCHAR})
+		    , 0
+		    , 0
+		    , 0
+	    )
+	</insert>
+	
+	<select id="selectDgrade" parameterType="string" resultType="DgradeVO">
+		SELECT
+		    DR_NO
+		    ,DR_GRADES
+		    ,DR_MC
+		    ,DR_LAC
+		    ,DR_FCC
+		FROM
+		    DGRADE_REQ
+		WHERE DR_NO = 'STU' || #{memNo}
+		    OR DR_NO = 'DR' || SUBSTR(#{memNo}, 3, 4)	
+	</select>
+
+</mapper>

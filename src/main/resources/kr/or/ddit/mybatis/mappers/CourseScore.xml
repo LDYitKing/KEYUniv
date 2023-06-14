@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.score.dao.ScoreDAO">
+	
+	<insert id="insertCourseScore" parameterType="CourseScoreVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="csNo">
+			SELECT 'CS'||LPAD(CS_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+	    MERGE INTO COURSE_SCORE CS
+	    USING DUAL
+	    ON (CS.COURSE_NO = #{courseNo, jdbcType=VARCHAR} AND CS.STU_NO = #{stuNo, jdbcType=VARCHAR})
+	    WHEN MATCHED THEN
+	        UPDATE SET CS_SCORE = #{csScore, jdbcType=NUMERIC}
+	    WHEN NOT MATCHED THEN
+	        INSERT (CS_NO, COURSE_NO, STU_NO, CS_SCORE)
+	        VALUES (#{csNo, jdbcType=VARCHAR}, #{courseNo, jdbcType=VARCHAR}, #{stuNo, jdbcType=VARCHAR}, #{csScore, jdbcType=NUMERIC})
+	</insert>
+	
+	
+	
+</mapper>

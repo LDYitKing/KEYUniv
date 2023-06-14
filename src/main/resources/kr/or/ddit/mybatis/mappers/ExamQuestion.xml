@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.exam.dao.ExamQuestionDAO">
+	
+	<insert id="insertExamQuestion" parameterType="ExamQuestionVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="eqNo">
+			SELECT EXAM_QUE_SEQ.NEXTVAL
+			FROM DUAL
+		</selectKey>
+		INSERT INTO EXAM_QUESTION(
+			EQ_NO
+			,EXAM_NO
+			,EQ_NUMBER
+			,EQ_QUE
+			,EQ_SCORE
+		)VALUES(
+		 	#{eqNo,jdbcType=VARCHAR}
+			, #{examNo,jdbcType=VARCHAR}
+			, #{eqNumber,jdbcType=NUMERIC}
+			, #{eqQue,jdbcType=VARCHAR}
+			, #{eqScore,jdbcType=VARCHAR}
+		)	
+	</insert>
+
+</mapper>

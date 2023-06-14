@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.exam.dao.ExamDAO">
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 강의별 시험리스트 보기 -->
+	<select id="selectExamList" resultType="ExamVO" parameterType="String">
+		SELECT
+		    E.EXAM_NO
+		    ,E.LECT_NO
+		    ,L.LECT_NAME
+		    ,EXAM_NAME
+		    ,EXAM_DATE
+		    ,EXAM_TYPE
+		    ,EXAM_KIND
+		    ,EXAM_STIME
+		    ,EXAM_ETIME
+		    , (
+		     SELECT COUNT(*)
+		     FROM EXAM_QUESTION A
+		     WHERE A.EXAM_NO = E.EXAM_NO
+		     )AS EQ_SUB
+		    ,COMM_NO
+		    ,COMM_NAME
+		    
+		FROM EXAM E
+		LEFT OUTER JOIN COMM ON (COMM_NO = EXAM_KIND)
+		LEFT OUTER JOIN LECTURE L ON (L.LECT_NO = E.LECT_NO)
+		WHERE E.LECT_NO = #{lectNo}
+		ORDER BY E.EXAM_NO
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 시험 상세 보기 -->
+	<select id="selectExam" resultType="ExamVO" parameterType="String">
+		SELECT 
+			EXAM_NO
+			,E.LECT_NO
+		    ,EXAM_NAME
+		    ,EXAM_DATE
+		    ,EXAM_TYPE
+		    ,EXAM_KIND
+   		    ,EXAM_STIME
+		    ,EXAM_ETIME
+		    
+		    ,COMM_NO
+		    ,COMM_NAME
+		    
+		    ,LECT_NAME
+		    ,AY_YEAR
+		    ,AY_SEMESTER
+		FROM EXAM E
+		LEFT OUTER JOIN COMM ON (COMM_NO = EXAM_KIND)
+		LEFT OUTER JOIN LECTURE L ON (L.LECT_NO = E.LECT_NO)
+		WHERE EXAM_NO = #{examNo}    
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 강의별 시험조회(제출여부도 조회) -->
+	<select id="selectExamSubList" resultType="ExamVO" parameterType="map">
+			SELECT
+			    E.EXAM_NO,
+			    E.LECT_NO,
+			    E.EXAM_NAME,
+			    E.EXAM_DATE,
+			    E.EXAM_TYPE,
+			    E.EXAM_KIND,
+			    E.EXAM_STIME,
+			    E.EXAM_ETIME,
+			    (
+		        SELECT COUNT(*)
+		        FROM ANSWER_SUBMIT A
+		        WHERE A.EXAM_NO = E.EXAM_NO
+		        AND A.STU_NO = #{stuNo}
+			    ) AS AS_SUB,
+			    C.COMM_NO,
+			    C.COMM_NAME
+			FROM EXAM E
+			LEFT OUTER JOIN COMM C ON C.COMM_NO = E.EXAM_KIND
+			WHERE E.LECT_NO = #{lectNo}
+			ORDER BY E.EXAM_NO
+	</select>
+
+
+
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 시험 등록 -->
+	<insert id="insertExam" parameterType="ExamVO">
+		<selectKey order="BEFORE" resultType="String" keyProperty="examNo">
+			SELECT 'EX'||LPAD(EXAM_SEQ.NEXTVAL,3,0)
+			FROM DUAL
+		</selectKey>
+		INSERT INTO EXAM
+		(
+			EXAM_NO
+			,LECT_NO
+			,EXAM_NAME
+			,EXAM_DATE
+			,EXAM_TYPE
+			,EXAM_KIND
+		    ,EXAM_STIME
+		    ,EXAM_ETIME
+		)
+		VALUES(
+			 #{examNo,jdbcType=VARCHAR}
+			, #{lectNo,jdbcType=VARCHAR}
+			, #{examName,jdbcType=VARCHAR}
+			, #{examDate,jdbcType=DATE}
+			, #{examType,jdbcType=VARCHAR}
+			, #{examKind,jdbcType=VARCHAR}		
+			, #{examStime,jdbcType=VARCHAR}		
+			, #{examEtime,jdbcType=VARCHAR}		
+		)
+	</insert>
+			 
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 시험별로 시험 문제 리스트 -->
+	<select id="selectExamQueList" resultType="ExamQuestionVO" parameterType="String">
+		 SELECT 
+		    EQ_NO
+		    ,EXAM_NO
+		    ,EQ_NUMBER
+		    ,EQ_QUE
+		    ,EQ_SCORE
+		 FROM EXAM_QUESTION
+		 WHERE EXAM_NO = #{examNo}
+		 ORDER BY EQ_NUMBER
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 시험문제별 지문 리스트 -->
+	<select id="selectExamTextList" resultType="ExamTextVO" parameterType="String">
+		 SELECT 
+		   ET_NO
+		    ,EQ_NO
+		    ,ET_QUE
+		    ,ET_RIGHT_ANSWER
+		 FROM EXAM_TEXT
+		 WHERE EQ_NO = #{eqNo}
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 시험별로 제출답 리스트 -->	
+	<select id="selectAnswerSubmitList" resultType="AnswerSubmitVO" parameterType="String">
+		SELECT
+			AS_NO
+			,ET_NO
+			,EQ_NO
+			,STU_NO
+			,AS_ANSWER
+			,EXAM_NO
+		FROM ANSWER_SUBMIT
+		WHERE EXAM_NO = #{examNo}
+		ORDER BY AS_NO, EQ_NO	
+	</select>
+<!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+<!-- 시험 삭제 -->	
+	<delete id="deleteExam" parameterType="ExamVO">
+		DELETE FROM EXAM
+		WHERE EXAM_NO = #{examNo}
+	</delete>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</mapper>

@@ -1,0 +1,36 @@
+@charset "UTF-8";
+#subjectProcessModal{ 
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    left: 0px; 
+    right: 0px;
+    background-color: rgba(128, 128, 128, 0.5);
+    z-index: 9999999999;
+    display: none;
+}
+
+#subjectProcessModalDiv{ 
+    width: 30%;
+    height: 70%;
+    margin: 160px auto;
+    background-color: white;
+}
+
+#subjectViewModal{ 
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    left: 0px; 
+    right: 0px;
+    background-color: rgba(128, 128, 128, 0.5);
+    z-index: 9999999999;
+    display: none;
+}
+
+#subjectViewModalDiv{ 
+    width: 30%;
+    height: auto;
+    margin: 110px auto;
+    background-color: white;
+}

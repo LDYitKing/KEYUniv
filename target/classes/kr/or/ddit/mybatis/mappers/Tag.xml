@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.curri.dao.TagDAO">
+	<insert id="insertTagList" parameterType="CurriBoardVO">
+		INSERT ALL
+		 <foreach collection="tagContent" item="tagCt" index="idx">
+			INTO TAG (
+			    TAG_NO
+			    ,CB_NO
+			    ,TAG_CONTENT
+			) VALUES (
+			    #{idx}+1
+			    , #{cbNo,jdbcType=VARCHAR}
+			    , #{tagCt}
+			)
+		 </foreach>
+		 SELECT * FROM DUAL
+	</insert>
+	
+	<select id="getTagRank" resultType="TagVO" parameterType="int">
+		SELECT TAG_CONTENT, COUNT
+		FROM (SELECT
+		        TAG_CONTENT
+		        , COUNT(TAG_CONTENT) COUNT
+		    FROM
+		        TAG
+		    GROUP BY TAG_CONTENT
+		    ORDER BY COUNT(TAG_CONTENT) DESC)
+		<![CDATA[  
+		WHERE ROWNUM <= #{rank}
+		]]>
+	</select>
+</mapper>

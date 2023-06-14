@@ -1,0 +1,18 @@
+@charset "UTF-8";
+#lectPlanModal{ 
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    left: 0px; 
+    right: 0px;
+    background-color: rgba(128, 128, 128, 0.5);
+    z-index: 9999999999;
+    display: none;
+}
+
+#lectPlanModalDiv{ 
+    width: 80%;
+    height: 85%;
+    margin: 90px auto;
+    background-color: white;
+}

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.professor.dao.ProfessorDAO">
+	<sql id="searchFrag">
+		<trim prefix="WHERE" prefixOverrides="AND">
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(deptNo)">
+				AND DEPT_NO = #{deptNo}
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(memName)">
+				AND INSTR(MEM_NAME, #{memName}) > 0
+			</if>
+			<if test="@org.apache.commons.lang3.StringUtils@isNotBlank(memNo)">
+				AND INSTR(MEM_NO, #{memNo}) > 0
+			</if>
+		</trim>
+	</sql>
+	
+	<select id="selectProfessorList" resultType="ProfessorVO" parameterType="ProfessorVO">
+		SELECT 
+			MEM_NO
+	        ,MEM_NAME
+	        ,DECODE(MEM_GENDER, 'M', '남', 'W', '여') MEM_GENDER
+	        ,MEM_TEL
+	        ,MEM_EMAIL
+	        ,MEM_ROLE
+
+	        ,PRO_NO
+	        ,DEPT_NO
+	        ,COL_NO
+
+	        ,DEPT_NAME
+	        ,COL_NAME
+		FROM PROFESSOR_VIEW
+		<include refid="searchFrag" />
+	</select>
+	
+	<select id="selectProfessor" resultType="ProfessorVO" parameterType="string">
+		SELECT
+	        MEM_NO
+	        ,MEM_NAME
+	        ,DECODE(MEM_GENDER, 'M', '남', 'W', '여') MEM_GENDER
+	        ,MEM_RRNO1
+	        ,MEM_RRNO2
+	        ,MEM_TEL
+	        ,MEM_ZIP
+	        ,MEM_ADD1
+	        ,MEM_ADD2
+	        ,MEM_EMAIL
+	        ,MEM_ROLE
+	        ,MEM_PHOTO
+	        
+	        ,ATCH_ORGIN_NAME
+	        ,ATCH_SAVE_NAME     
+	        
+	        ,PRO_NO
+	        ,DEPT_NO
+	        ,COL_NO
+	        ,PRO_POS
+	        ,PRO_LOE
+	        ,PRO_CAREER
+	        ,PRO_EDATE
+	        ,PRO_RDATE
+	
+	        ,DEPT_NAME
+	        ,COL_NAME			
+		FROM PROFESSOR_VIEW
+		WHERE MEM_NO = #{memNo}
+			
+	</select>
+</mapper>
